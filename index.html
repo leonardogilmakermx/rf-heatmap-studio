@@ -55,8 +55,9 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen w-screen flex flex-col">
 
-    <!-- INPUT OCULTO PARA CARGAR PLANO -->
+    <!-- INPUTS OCULTOS (PLANO IMAGEN Y PROYECTO .RFHM) -->
     <input type="file" id="floorplan-file-input" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="handleFloorplanUpload(event)">
+    <input type="file" id="project-file-input" accept=".rfhm,application/json" class="hidden" onchange="loadProjectFile(event)">
 
     <!-- BARRA SUPERIOR DE CONTROL -->
     <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-20 shrink-0">
@@ -74,7 +75,7 @@
                         <span id="author-name-header">Diseñado por Ing. G. Leonardo Dominguez Garcia</span>
                     </span>
                 </div>
-                <p class="text-[10px] text-slate-400">Radiación Concurrente Multi-Banda &bull; Simulación RF 2D/3D &bull; Telemetría Tri-Band</p>
+                <p class="text-[10px] text-slate-400">Multi-AP Concurrente &bull; Radiación 2.4/5/6 GHz &bull; Proyectos .RFHM &bull; Entorno 2D/3D</p>
             </div>
         </div>
 
@@ -97,9 +98,18 @@
             </button>
         </div>
 
-        <!-- Acciones principales -->
+        <!-- Acciones principales y Gestión de Proyecto .RFHM -->
         <div class="flex items-center space-x-2">
-            <button onclick="document.getElementById('floorplan-file-input').click()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-500/50 text-indigo-300 text-xs font-semibold transition shadow-sm" title="Importar plano arquitectónico JPG / PNG">
+            <!-- ABRIR / GUARDAR PROYECTO .RFHM -->
+            <button onclick="document.getElementById('project-file-input').click()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-950/50 hover:bg-blue-900/60 border border-blue-500/50 text-blue-300 text-xs font-semibold transition shadow-sm" title="Abrir proyecto guardado (.rfhm)">
+                <i data-lucide="folder-open" class="w-3.5 h-3.5 text-blue-400"></i> Abrir (.rfhm)
+            </button>
+            <button onclick="saveProjectFile()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/50 text-cyan-300 text-xs font-semibold transition shadow-sm" title="Guardar todo el proyecto en archivo .rfhm">
+                <i data-lucide="save" class="w-3.5 h-3.5 text-cyan-400"></i> Guardar (.rfhm)
+            </button>
+
+            <!-- Cargar Plano Imagen -->
+            <button onclick="document.getElementById('floorplan-file-input').click()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-500/50 text-indigo-300 text-xs font-semibold transition shadow-sm" title="Importar plano arquitectónico JPG / PNG de fondo">
                 <i data-lucide="image-plus" class="w-3.5 h-3.5 text-indigo-400"></i> + Plano JPG/PNG
             </button>
 
@@ -158,23 +168,23 @@
             <!-- Pestañas -->
             <div class="flex border-b border-slate-800 bg-slate-950/90 text-xs font-semibold">
                 <button id="tab-btn-aps" onclick="switchTab('aps')" class="flex-1 py-2 text-center text-cyan-400 border-b-2 border-cyan-500 flex items-center justify-center gap-1">
-                    <i data-lucide="wifi" class="w-3 h-3"></i> APs (<span id="tab-cnt-aps">0</span>)
+                    <i data-lucide="wifi" class="w-3.5 h-3.5"></i> APs (<span id="tab-cnt-aps">0</span>)
                 </button>
                 <button id="tab-btn-clients" onclick="switchTab('clients')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
-                    <i data-lucide="monitor-smartphone" class="w-3 h-3"></i> STAs (<span id="tab-cnt-clients">0</span>)
+                    <i data-lucide="monitor-smartphone" class="w-3.5 h-3.5"></i> STAs (<span id="tab-cnt-clients">0</span>)
                 </button>
                 <button id="tab-btn-noise" onclick="switchTab('noise')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
                     <i data-lucide="zap" class="w-3.5 h-3.5"></i> Ruido (<span id="tab-cnt-noise">0</span>)
                 </button>
                 <button id="tab-btn-walls" onclick="switchTab('walls')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
-                    <i data-lucide="box" class="w-3 h-3"></i> Muros (<span id="tab-cnt-walls">0</span>)
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i> Muros (<span id="tab-cnt-walls">0</span>)
                 </button>
             </div>
 
             <!-- Contenido scrollable -->
             <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5">
 
-                <!-- PESTAÑA APs CON RADIOS MULTI-BANDA CONCURRENTES -->
+                <!-- PESTAÑA APs (MULTI-RADIO CONCURRENTE) -->
                 <div id="tab-content-aps" class="space-y-3.5">
                     <div id="ap-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-cyan-900/60 space-y-2.5 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
@@ -186,7 +196,7 @@
                             </button>
                         </div>
 
-                        <!-- Nombre / SSID y Modo de Radiación de Bandas -->
+                        <!-- Nombre / SSID y Activación de Radios -->
                         <div class="space-y-2 text-xs">
                             <div>
                                 <span class="text-[10px] text-slate-400 block mb-1">Nombre / SSID Principal:</span>
@@ -194,7 +204,7 @@
                             </div>
 
                             <div>
-                                <span class="text-[10px] text-slate-400 block mb-1">Bandas de Emisión Simultáneas:</span>
+                                <span class="text-[10px] text-slate-400 block mb-1">Radiación Concurrente Multi-Banda:</span>
                                 <div class="grid grid-cols-3 gap-1 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
                                     <label class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 cursor-pointer">
                                         <input type="checkbox" id="ap-radio-enable-24" onchange="toggleAPRadio('2.4', this.checked)" class="rounded bg-slate-800 accent-emerald-500">
@@ -212,16 +222,14 @@
                             </div>
                         </div>
 
-                        <!-- Configurador Individual por Radio Activo -->
-                        <div id="ap-radios-config-container" class="space-y-2 pt-1">
-                            <!-- Inyectado dinámicamente según radios habilitados -->
-                        </div>
+                        <!-- Configuración Detallada por Transmisor Activo -->
+                        <div id="ap-radios-config-container" class="space-y-2 pt-1"></div>
 
                         <!-- Antena, Apertura y Altura -->
                         <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-2">
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
-                                    <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400"></i> Radiación y Geometría Z
+                                    <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400"></i> Patrón de Radiación & Altura
                                 </span>
                                 <span id="antenna-type-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono">Omni</span>
                             </div>
@@ -943,6 +951,124 @@
         const offCanvas = document.createElement('canvas');
         const offCtx = offCanvas.getContext('2d');
 
+        /* ==========================================================================
+           GESTIÓN DE PROYECTOS .RFHM (GUARDAR Y ABRIR PROYECTO COMPLETO)
+           ========================================================================== */
+
+        function saveProjectFile() {
+            ensureAuthorIntegrity();
+            const projectData = {
+                metadata: {
+                    appName: AUTHOR_CREDITS.APP_NAME,
+                    version: "2.5-enterprise",
+                    author: AUTHOR_CREDITS.AUTHOR,
+                    exportDate: new Date().toISOString(),
+                    format: "RFHM"
+                },
+                project: {
+                    pixelsPerMeter: state.pixelsPerMeter,
+                    gridStep: state.gridStep,
+                    heatmapMode: state.heatmapMode,
+                    currentPreset: state.currentPreset,
+                    presetAttenuation: state.presetAttenuation,
+                    defaultWallHeight: state.defaultWallHeight,
+                    accessPoints: state.accessPoints,
+                    clients: state.clients,
+                    noiseSources: state.noiseSources,
+                    walls: state.walls,
+                    floorplan: {
+                        hasImage: !!state.floorplanImage,
+                        opacity: state.floorplanOpacity,
+                        dataUrl: state.floorplanImage ? state.floorplanImage.src : null
+                    }
+                }
+            };
+
+            const jsonStr = JSON.stringify(projectData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const filenameDate = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.download = `Estudio_RF_${filenameDate}.rfhm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadProjectFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if (!data.project) {
+                        alert('Formato de archivo .rfhm no válido.');
+                        return;
+                    }
+
+                    const proj = data.project;
+
+                    // Restaurar parámetros del entorno
+                    state.pixelsPerMeter = proj.pixelsPerMeter || 25.0;
+                    state.gridStep = proj.gridStep || 10;
+                    state.heatmapMode = proj.heatmapMode || 'composite';
+                    state.currentPreset = proj.currentPreset || 'brick';
+                    state.presetAttenuation = proj.presetAttenuation || 6.0;
+                    state.defaultWallHeight = proj.defaultWallHeight || 2.8;
+
+                    // Restaurar elementos
+                    state.accessPoints = proj.accessPoints || [];
+                    state.clients = proj.clients || [];
+                    state.noiseSources = proj.noiseSources || [];
+                    state.walls = proj.walls || [];
+
+                    // Restaurar selecciones
+                    state.activeAPId = state.accessPoints.length > 0 ? state.accessPoints[0].id : null;
+                    state.activeClientId = state.clients.length > 0 ? state.clients[0].id : null;
+                    state.activeNoiseId = state.noiseSources.length > 0 ? state.noiseSources[0].id : null;
+                    state.activeWallIndex = -1;
+
+                    // Restaurar Plano Arquitectónico si existe
+                    if (proj.floorplan && proj.floorplan.hasImage && proj.floorplan.dataUrl) {
+                        state.floorplanOpacity = proj.floorplan.opacity || 0.65;
+                        const img = new Image();
+                        img.onload = function() {
+                            state.floorplanImage = img;
+                            document.getElementById('floorplan-opacity-slider').value = state.floorplanOpacity;
+                            document.getElementById('floorplan-opacity-box').classList.remove('hidden');
+                            document.getElementById('floorplan-opacity-box').classList.add('flex');
+                            render2D();
+                            if (state.view === '3d') update3DScene();
+                        };
+                        img.src = proj.floorplan.dataUrl;
+                    } else {
+                        removeFloorplan();
+                    }
+
+                    // Actualizar inputs UI
+                    document.getElementById('input-ppm').value = state.pixelsPerMeter.toFixed(1);
+                    document.getElementById('material-preset').value = state.currentPreset;
+
+                    // Refrescar vistas
+                    resetZoom();
+                    updateUIComponents();
+                    render2D();
+                    if (state.view === '3d') update3DScene();
+
+                    alert(`Proyecto .rfhm "${file.name}" cargado correctamente.`);
+                } catch (err) {
+                    alert('Error al interpretar el archivo .rfhm: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        /* CARGA Y GESTIÓN DE LA IMAGEN DE PLANO */
         function handleFloorplanUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1099,7 +1225,6 @@
             return maxGain - atten;
         }
 
-        // CÁLCULO DE SEÑAL POR RADIO ESPECÍFICO DEL AP
         function calculateSignalFromAPRadio(ap, bandKey, targetX, targetY, targetZ = 1.1) {
             const radio = ap.radios ? ap.radios[bandKey] : null;
             if (!radio || !radio.enabled) return -140;
@@ -1133,7 +1258,6 @@
         function calculateCompositeSignalAt(targetX, targetY, targetZ = 1.1, specificBand = null) {
             if (state.accessPoints.length === 0) return -120;
             let maxRssi = -140;
-
             const bandsToCheck = specificBand ? [specificBand] : ['2.4', '5.0', '6.0'];
 
             if (state.heatmapMode === 'selected') {
@@ -1187,7 +1311,6 @@
             const dzM = Math.abs((client.height || 1.1) - ap.height);
             const dist3DM = Math.sqrt(dist2DM * dist2DM + dzM * dzM);
 
-            // Seleccionar mejor radio disponible de ese AP
             let bestBand = '5.0', bestSignal = -140;
             ['6.0', '5.0', '2.4'].forEach(b => {
                 const s = calculateSignalFromAPRadio(ap, b, client.x, client.y, client.height || 1.1);
@@ -1474,17 +1597,11 @@
             ctx.arc(ap.x, ap.y, radius - 4, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = ap.color;
-            ctx.beginPath();
-            ctx.arc(ap.x, ap.y, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Etiqueta de Bandas Activas
             const activeBands = Object.keys(ap.radios).filter(b => ap.radios[b].enabled).map(b => `${b}G`).join('/');
             ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#f8fafc';
             ctx.textAlign = 'center';
-            ctx.fillText(`${ap.name} [${activeBands || 'Mute'}]`, ap.x, ap.y + radius + 14);
+            ctx.fillText(`${ap.name} [${activeBands || 'OFF'}]`, ap.x, ap.y + radius + 14);
             ctx.restore();
         }
 
@@ -1733,12 +1850,10 @@
             document.getElementById('ap-selected-name').textContent = ap.name;
             document.getElementById('ap-name-input').value = ap.name;
 
-            // Checkboxes de Bandas
             document.getElementById('ap-radio-enable-24').checked = !!(ap.radios['2.4'] && ap.radios['2.4'].enabled);
             document.getElementById('ap-radio-enable-50').checked = !!(ap.radios['5.0'] && ap.radios['5.0'].enabled);
             document.getElementById('ap-radio-enable-60').checked = !!(ap.radios['6.0'] && ap.radios['6.0'].enabled);
 
-            // Inyectar paneles por radio activo
             const radiosContainer = document.getElementById('ap-radios-config-container');
             radiosContainer.innerHTML = '';
 
@@ -1792,7 +1907,6 @@
             });
             lucide.createIcons();
 
-            // Antena y radiación
             document.getElementById('ap-antenna-type').value = ap.antennaType;
             document.getElementById('antenna-type-badge').textContent = ap.antennaType === 'directional' ? 'Sectorial' : 'Omni';
             document.getElementById('ap-beamwidth-select').value = ap.beamwidth || 60;
@@ -2212,7 +2326,7 @@
                 item.onclick = () => { setActiveWall(idx); render2D(); };
                 item.innerHTML = `
                     <div class="flex items-center gap-1.5">
-                        <span class="w-2 ha-2 rounded-full ${isSelected ? 'bg-cyan-400' : 'bg-slate-600'}"></span>
+                        <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-cyan-400' : 'bg-slate-600'}"></span>
                         <span class="font-medium">Muro ${idx + 1}</span>
                         <span class="text-[10px] text-slate-500 font-mono">(${lenM}m x ${(wall.height||2.8)}m)</span>
                     </div>
@@ -2390,7 +2504,6 @@
                 rctx.restore();
             }
 
-            // APs con el radio de esta banda encendido
             const bandAPs = state.accessPoints.filter(a => a.radios && a.radios[targetBand] && a.radios[targetBand].enabled);
 
             for (let x = 0; x < rCanvas.width; x += step) {
@@ -2407,7 +2520,6 @@
                 }
             }
 
-            // Muros
             state.walls.forEach(w => {
                 rctx.save();
                 rctx.strokeStyle = w.material === 'concrete' ? '#64748b' : (w.material === 'brick' ? '#d97706' : '#0284c7');
@@ -2420,7 +2532,6 @@
                 rctx.restore();
             });
 
-            // APs
             bandAPs.forEach(ap => {
                 const radio = ap.radios[targetBand];
                 rctx.save();
@@ -2518,7 +2629,6 @@
                 }
             });
 
-            // Dibujar cada AP con radio habilitado en esta banda
             state.accessPoints.forEach(ap => {
                 const radio = ap.radios ? ap.radios[bandKeyStr] : null;
                 if (!radio || !radio.enabled) return;
@@ -2663,7 +2773,6 @@
                             <strong>Resumen de Ingeniería:</strong> Evaluación de propagación electromagnética considerando puntos de acceso multi-radio (2.4 GHz, 5 GHz y 6 GHz concurrentes), pérdidas por espacio libre (FSPL), atenuación particionada por muros, plano de planta y fuentes de ruido e interferencia espectral.
                         </div>
 
-                        <!-- 1. PUNTOS DE ACCESO -->
                         <div class="section-title">1. Configuración de Puntos de Acceso (Radios Concurrentes por AP)</div>
                         <table>
                             <thead>
@@ -2672,7 +2781,6 @@
                             <tbody>${apRows}</tbody>
                         </table>
 
-                        <!-- 2. DISPOSITIVOS Y RUIDO -->
                         <div class="section-title">2. Telemetría de Clientes (STAs) y Piso de Ruido Percibido</div>
                         <table>
                             <thead>
@@ -2681,7 +2789,6 @@
                             <tbody>${clientRows}</tbody>
                         </table>
 
-                        <!-- 3. ESPECTROS RF -->
                         <div class="section-title">3. Diagnóstico Espectral (PSD) por Banda</div>
                         <div class="img-card">
                             <div class="img-card-title"><span>ESPECTRO RF - BANDA 2.4 GHz ISM</span><span style="color: #34d399;">Canales 1 - 13</span></div>
@@ -2696,7 +2803,6 @@
                             <img src="${spec60Url}" alt="Espectro 6 GHz">
                         </div>
 
-                        <!-- 4. MAPAS DE CALOR POR BANDA (AMPLIOS A ANCHO COMPLETO) -->
                         <div class="section-title">4. Mapas de Cobertura y Señal (Heatmaps) por Banda (Vista Amplia)</div>
                         <div class="img-card">
                             <div class="img-card-title"><span>MAPA DE COBERTURA RF - BANDA 2.4 GHz</span><span style="color: #34d399;">Potencia Recibida (Max RSSI dBm)</span></div>
@@ -2711,7 +2817,6 @@
                             <img src="${heatmap60Url}" alt="Heatmap 6 GHz">
                         </div>
 
-                        <!-- 5. MUROS -->
                         <div class="section-title">5. Inventario Arquitectónico de Atenuación (Muros)</div>
                         <table>
                             <thead>
@@ -2948,7 +3053,6 @@
             document.getElementById('author-modal').classList.add('hidden');
         }
 
-        /* MODAL DE ESPECTRO RF CON FILTRADO MULTI-RADIO */
         function openSpectrumModal() {
             const modal = document.getElementById('spectrum-modal');
             if (!modal) return;
