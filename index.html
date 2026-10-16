@@ -1,0 +1,2871 @@
+<!-- ==========================================================================
+     PROPIEDAD INTELECTUAL Y DERECHOS DE AUTOR REGISTRADOS
+     RF HEATMAP STUDIO ENTERPRISE 2D/3D - SIMULADOR TELECOMUNICACIONES RF
+     --------------------------------------------------------------------------
+     AUTOR ORIGINAL & ARQUITECTO DE SOFTWARE:
+     Ing. G. Leonardo Dominguez Garcia
+
+     TODOS LOS DERECHOS RESERVADOS (C) 2026.
+     DISEÑO, ARQUITECTURA DE CÁLCULO RF Y VISUALIZACIÓN BIDIMENSIONAL / TRIDIMENSIONAL.
+     ESTA APLICACIÓN CONTIENE MECANISMOS DE INTEGRIDAD DE CRÉDITOS EN TIEMPO DE EJECUCIÓN.
+     ========================================================================== -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ing. G. Leonardo Dominguez Garcia">
+    <meta name="creator" content="Ing. G. Leonardo Dominguez Garcia">
+    <meta name="copyright" content="Ing. G. Leonardo Dominguez Garcia">
+    <meta name="description" content="RF Heatmap Studio Enterprise - Simulador de Propagación Wi-Fi 2D y 3D multi-AP y multi-cliente diseñado por Ing. G. Leonardo Dominguez Garcia">
+    <meta name="keywords" content="mapa de calor wifi, simulador wifi 2d 3d, atenuacion de muros, telecomunicaciones, wifi 7, wifi 6e, Ing. G. Leonardo Dominguez Garcia">
+    <title>RF Heatmap Studio Enterprise 2D/3D | Diseñado por Ing. G. Leonardo Dominguez Garcia</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js + OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            overflow: hidden;
+        }
+        .canvas-grid {
+            background-color: #020617;
+            background-image: 
+                linear-gradient(to right, rgba(51, 65, 85, 0.22) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(51, 65, 85, 0.22) 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        input[type="range"] {
+            accent-color: #06b6d4;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.90);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(51, 65, 85, 0.55);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen flex flex-col">
+
+    <!-- BARRA SUPERIOR DE CONTROL -->
+    <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+                <i data-lucide="radio-tower" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
+                        RF STUDIO <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-semibold">ENTERPRISE</span>
+                    </h1>
+                    <span id="author-badge-header" class="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-950 to-blue-950 border border-cyan-500/40 text-cyan-300 font-medium flex items-center gap-1 shadow-sm">
+                        <i data-lucide="award" class="w-3 h-3 text-cyan-400"></i>
+                        <span id="author-name-header">Diseñado por Ing. G. Leonardo Dominguez Garcia</span>
+                    </span>
+                </div>
+                <p class="text-[10px] text-slate-400">Multi-AP &bull; Multi-Client Wi-Fi 5/6/7 &bull; Telemetría 2D/3D &bull; Roaming Dinámico</p>
+            </div>
+        </div>
+
+        <!-- Modo de Mapa de Calor Multi-AP -->
+        <div class="flex items-center bg-slate-950/90 p-1 rounded-lg border border-slate-800 space-x-1 shadow-inner">
+            <span class="text-xs text-slate-400 px-2 font-medium flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i> Heatmap:
+            </span>
+            <button id="btn-hm-composite" onclick="setHeatmapMode('composite')" class="px-2.5 py-1 rounded text-xs font-semibold transition-all bg-cyan-600 text-white shadow">
+                Compuesto (Max RSSI)
+            </button>
+            <button id="btn-hm-selected" onclick="setHeatmapMode('selected')" class="px-2.5 py-1 rounded text-xs font-semibold transition-all text-slate-400 hover:text-slate-200">
+                Solo AP
+            </button>
+            <button id="btn-hm-sinr" onclick="setHeatmapMode('sinr')" class="px-2.5 py-1 rounded text-xs font-semibold transition-all text-amber-400 hover:text-amber-200" title="Ver relación Señal a Ruido + Interferencia">
+                SINR / Calidad (dB)
+            </button>
+            <button id="btn-hm-noise" onclick="setHeatmapMode('noise')" class="px-2.5 py-1 rounded text-xs font-semibold transition-all text-rose-400 hover:text-rose-200" title="Ver mapa de piso de ruido e interferencia No-WiFi">
+                Ruido / Interferencias
+            </button>
+        </div>
+
+        <!-- Conmutador 2D / 3D, Autor & Acciones -->
+        <div class="flex items-center space-x-2">
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button id="btn-view-2d" onclick="switchView('2d')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-cyan-400 border border-cyan-500/40 shadow">
+                    <i data-lucide="layout" class="w-3.5 h-3.5"></i> Plano 2D
+                </button>
+                <button id="btn-view-3d" onclick="switchView('3d')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i> Entorno 3D
+                </button>
+            </div>
+
+            <button id="btn-tool-calibrate" onclick="setTool('calibrate')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-600/40 text-amber-400 hover:bg-amber-900/50 text-xs font-medium transition" title="Medir referencia para calibrar escala metro-píxel">
+                <i data-lucide="ruler" class="w-3.5 h-3.5"></i> Calibrar Escala
+            </button>
+
+            <button onclick="openAuthorModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-700/50 text-cyan-300 text-xs font-medium transition" title="Ver Créditos y Autoría Original">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-cyan-400"></i> Autoría
+            </button>
+
+            <button onclick="clearCurrentPlan()" class="p-2 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700 transition" title="Limpiar todo">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- PANEL LATERAL IZQUIERDO -->
+        <aside class="w-96 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 shrink-0 select-none">
+            
+            <!-- Herramientas Rápidas -->
+            <div class="p-2 border-b border-slate-800 grid grid-cols-5 gap-1 bg-slate-950/70">
+                <button id="tool-select" onclick="setTool('select')" class="py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-slate-800 text-cyan-300 border border-cyan-500/40" title="Seleccionar y arrastrar cualquier objeto">
+                    <i data-lucide="mouse-pointer" class="w-3 h-3"></i> Mover
+                </button>
+                <button id="tool-draw" onclick="setTool('draw')" class="py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800" title="Dibujar nuevo muro">
+                    <i data-lucide="pencil" class="w-3 h-3"></i> Muro
+                </button>
+                <button onclick="addNewAP()" class="py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900/80 border border-cyan-700/50" title="Añadir Punto de Acceso (AP)">
+                    <i data-lucide="wifi" class="w-3 h-3"></i> + AP
+                </button>
+                <button onclick="addNewClient()" class="py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/80 border border-emerald-700/50" title="Añadir Dispositivo Móvil">
+                    <i data-lucide="smartphone" class="w-3 h-3"></i> + STA
+                </button>
+                <button onclick="addNewNoiseSource()" class="py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-rose-950/60 text-rose-300 hover:bg-rose-900/80 border border-rose-700/50" title="Añadir Fuente de Ruido / Interferencia">
+                    <i data-lucide="zap" class="w-3 h-3"></i> + Ruido
+                </button>
+            </div>
+
+            <!-- Pestañas -->
+            <div class="flex border-b border-slate-800 bg-slate-950/90 text-xs font-semibold">
+                <button id="tab-btn-aps" onclick="switchTab('aps')" class="flex-1 py-2 text-center text-cyan-400 border-b-2 border-cyan-500 flex items-center justify-center gap-1">
+                    <i data-lucide="wifi" class="w-3 h-3"></i> APs (<span id="tab-cnt-aps">0</span>)
+                </button>
+                <button id="tab-btn-clients" onclick="switchTab('clients')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
+                    <i data-lucide="monitor-smartphone" class="w-3 h-3"></i> STAs (<span id="tab-cnt-clients">0</span>)
+                </button>
+                <button id="tab-btn-noise" onclick="switchTab('noise')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
+                    <i data-lucide="zap" class="w-3 h-3"></i> Ruido (<span id="tab-cnt-noise">0</span>)
+                </button>
+                <button id="tab-btn-walls" onclick="switchTab('walls')" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
+                    <i data-lucide="box" class="w-3 h-3"></i> Muros (<span id="tab-cnt-walls">0</span>)
+                </button>
+            </div>
+
+            <!-- Contenido scrollable -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5">
+
+                <!-- PESTAÑA APs -->
+                <div id="tab-content-aps" class="space-y-3.5">
+                    <div id="ap-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-cyan-900/60 space-y-2.5 shadow-lg">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                <i data-lucide="radio" class="w-3.5 h-3.5"></i> AP Seleccionado: <span id="ap-selected-name" class="text-white">AP-1</span>
+                            </span>
+                            <button onclick="deleteSelectedAP()" class="p-1 rounded text-red-400 hover:bg-red-950/60 transition" title="Eliminar este AP">
+                                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Nombre y Banda -->
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Nombre / SSID:</span>
+                                <input id="ap-name-input" type="text" oninput="updateActiveAPProp('name', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:border-cyan-400 focus:outline-none">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Banda Wi-Fi:</span>
+                                <select id="ap-freq-select" onchange="onAPBandChange(parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-semibold text-xs focus:border-cyan-400 focus:outline-none">
+                                    <option value="2.4">2.4 GHz</option>
+                                    <option value="5.0">5.0 GHz</option>
+                                    <option value="6.0">6.0 GHz (6E/7)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Selector Dinámico de Canal y Ancho de Banda -->
+                        <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+                                    <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i> Canal & Frecuencia RF
+                                </span>
+                                <span id="ap-channel-freq-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono">5180 MHz</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-1">Canal Asignado:</span>
+                                    <select id="ap-channel-select" onchange="updateActiveAPProp('channel', parseInt(this.value))" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-semibold text-xs focus:border-cyan-400 focus:outline-none">
+                                    </select>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-1">Ancho de Canal (MHz):</span>
+                                    <select id="ap-chwidth-select" onchange="updateActiveAPProp('channelWidth', parseInt(this.value))" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-amber-300 font-semibold text-xs focus:border-cyan-400 focus:outline-none">
+                                        <option value="20">20 MHz</option>
+                                        <option value="40">40 MHz</option>
+                                        <option value="80">80 MHz</option>
+                                        <option value="160">160 MHz</option>
+                                        <option value="320">320 MHz (Wi-Fi 7)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Antena y Patrón Direccional -->
+                        <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+                                    <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400"></i> Patrón de Radiación
+                                </span>
+                                <span id="antenna-type-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono">Omni</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-1">Tipo de Antena:</span>
+                                    <select id="ap-antenna-type" onchange="updateActiveAPProp('antennaType', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-semibold text-xs focus:border-cyan-400 focus:outline-none">
+                                        <option value="omni">Omnidireccional (360°)</option>
+                                        <option value="directional">Direccional (Sectorial / Patch)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-1">Apertura (HPBW):</span>
+                                    <select id="ap-beamwidth-select" onchange="updateActiveAPProp('beamwidth', parseFloat(this.value))" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-amber-300 font-semibold text-xs focus:border-cyan-400 focus:outline-none">
+                                        <option value="30">30° (Haz Estrecho)</option>
+                                        <option value="45">45° (Sectorial Concentrado)</option>
+                                        <option value="60">60° (Sectorial Estándar)</option>
+                                        <option value="90">90° (Gran Cobertura)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="directional-controls-box" class="space-y-2 pt-1 border-t border-slate-800/80">
+                                <div>
+                                    <div class="flex justify-between items-center text-[10px] mb-1">
+                                        <span class="text-slate-400">Azimut / Orientación:</span>
+                                        <span id="ap-azimuth-val" class="font-mono text-cyan-300 font-bold">0°</span>
+                                    </div>
+                                    <input id="ap-azimuth-slider" type="range" min="0" max="360" step="1" value="0" oninput="updateActiveAPProp('azimuth', parseFloat(this.value))" class="w-full h-1.5 bg-slate-800 rounded">
+                                    <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-0.5">
+                                        <span>0° (E)</span><span>90° (S)</span><span>180° (O)</span><span>270° (N)</span><span>360°</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                    <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                        <div class="flex justify-between mb-0.5">
+                                            <span class="text-slate-400">Ganancia:</span>
+                                            <span id="ap-gain-val" class="font-mono text-cyan-300 font-bold">8.0 dBi</span>
+                                        </div>
+                                        <input id="ap-gain-slider" type="range" min="2" max="18" step="0.5" value="8" oninput="updateActiveAPProp('antennaGain', parseFloat(this.value))" class="w-full h-1 bg-slate-800 rounded">
+                                    </div>
+                                    <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                        <div class="flex justify-between mb-0.5">
+                                            <span class="text-slate-400">Front-to-Back:</span>
+                                            <span id="ap-f2b-val" class="font-mono text-amber-300 font-bold">25 dB</span>
+                                        </div>
+                                        <input id="ap-f2b-slider" type="range" min="12" max="35" step="1" value="25" oninput="updateActiveAPProp('frontToBack', parseFloat(this.value))" class="w-full h-1 bg-slate-800 rounded">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Potencia Tx y Altura Z -->
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] text-slate-400">Potencia Tx:</span>
+                                    <span id="ap-tx-val" class="font-mono text-cyan-300 font-bold text-[11px]">20 dBm</span>
+                                </div>
+                                <input id="ap-tx-slider" type="range" min="10" max="30" step="1" value="20" oninput="updateActiveAPProp('txPower', parseInt(this.value))" class="w-full h-1.5 bg-slate-800 rounded">
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] text-slate-400">Altura Z (m):</span>
+                                    <span id="ap-height-val" class="font-mono text-cyan-300 font-bold text-[11px]">2.6 m</span>
+                                </div>
+                                <input id="ap-height-slider" type="range" min="1.5" max="6.0" step="0.1" value="2.6" oninput="updateActiveAPProp('height', parseFloat(this.value))" class="w-full h-1.5 bg-slate-800 rounded">
+                            </div>
+                        </div>
+
+                        <!-- Color distintivo -->
+                        <div class="flex items-center justify-between text-xs pt-1">
+                            <span class="text-slate-400 text-[11px]">Identificador de Color:</span>
+                            <div class="flex items-center gap-1.5" id="ap-color-picker"></div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de APs -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-400 uppercase tracking-wider">Puntos de Acceso en Red</span>
+                            <button onclick="addNewAP()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar Otro AP
+                            </button>
+                        </div>
+                        <div id="ap-list-container" class="max-h-56 overflow-y-auto space-y-1.5 pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA CLIENTES -->
+                <div id="tab-content-clients" class="hidden space-y-3.5">
+                    <div id="client-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-emerald-900/60 space-y-2.5 shadow-lg">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Dispositivo: <span id="client-selected-name" class="text-white">Laptop 1</span>
+                            </span>
+                            <button onclick="deleteSelectedClient()" class="p-1 rounded text-red-400 hover:bg-red-950/60 transition" title="Eliminar este cliente">
+                                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Nombre:</span>
+                                <input id="cli-name-input" type="text" oninput="updateActiveClientProp('name', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:border-emerald-400 focus:outline-none">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Tipo de Equipo:</span>
+                                <select id="cli-type-select" onchange="updateActiveClientProp('type', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:border-emerald-400 focus:outline-none">
+                                    <option value="phone">Smartphone</option>
+                                    <option value="laptop">Laptop / PC</option>
+                                    <option value="tablet">Tablet / iPad</option>
+                                    <option value="iot">Sensor IoT</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Estándar Wi-Fi:</span>
+                                <select id="cli-std-select" onchange="updateActiveClientProp('standard', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-300 font-semibold text-xs focus:border-emerald-400 focus:outline-none">
+                                    <option value="wifi5">Wi-Fi 5 (ac)</option>
+                                    <option value="wifi6">Wi-Fi 6 (ax)</option>
+                                    <option value="wifi7">Wi-Fi 7 (be)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Asociación (AP):</span>
+                                <select id="cli-ap-association-select" onchange="updateActiveClientProp('forcedAP', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-semibold text-xs focus:border-emerald-400 focus:outline-none">
+                                    <option value="auto">Auto (Mejor RSSI)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs bg-slate-900 p-2 rounded border border-slate-800">
+                            <span class="text-[10px] text-slate-400">Altura Z (m):</span>
+                            <div class="flex items-center gap-2">
+                                <input id="cli-height-slider" type="range" min="0.5" max="2.0" step="0.1" value="1.1" oninput="updateActiveClientProp('height', parseFloat(this.value))" class="w-28 h-1.5 bg-slate-800 rounded">
+                                <span id="cli-height-val" class="font-mono text-emerald-300 font-bold text-[11px]">1.1 m</span>
+                            </div>
+                        </div>
+
+                        <!-- Telemetría en Vivo -->
+                        <div class="space-y-1 bg-slate-950 p-2 rounded border border-slate-800 text-[11px] font-mono">
+                            <div class="flex justify-between items-center text-cyan-300">
+                                <span>Distancia 3D:</span>
+                                <span id="telemetry-dist" class="font-bold">-- m</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Muros cruzados:</span>
+                                <span id="telemetry-walls" class="text-amber-400">0 (-0 dB)</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Señal RSSI:</span>
+                                <span id="telemetry-rssi" class="text-emerald-400 font-bold">-- dBm</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Ruido + Interf.:</span>
+                                <span id="telemetry-noise-floor" class="text-rose-400 font-bold">-- dBm</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>SINR (Calidad):</span>
+                                <span id="telemetry-sinr" class="text-amber-400 font-bold">-- dB</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Velocidad Estimada:</span>
+                                <span id="telemetry-speed" class="text-cyan-400 font-bold">-- Mbps</span>
+                            </div>
+                        </div>
+
+                        <button onclick="openSpectrumModal()" class="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-emerald-600/30 to-cyan-600/30 hover:from-emerald-600/50 hover:to-cyan-600/50 border border-emerald-500/50 text-emerald-300 hover:text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg transition">
+                            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Ver Espectro RF en Dispositivo</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-400 uppercase tracking-wider">Dispositivos en Escena</span>
+                            <button onclick="addNewClient()" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar Cliente
+                            </button>
+                        </div>
+                        <div id="clients-list-container" class="max-h-56 overflow-y-auto space-y-1.5 pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA FUENTES DE RUIDO -->
+                <div id="tab-content-noise" class="hidden space-y-3.5">
+                    <div id="noise-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-rose-900/60 space-y-2.5 shadow-lg">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Agente: <span id="noise-selected-name" class="text-white">Microondas</span>
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <button id="noise-toggle-power-btn" onclick="toggleSelectedNoiseActive()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 hover:bg-rose-500 text-white transition">
+                                    ON
+                                </button>
+                                <button onclick="deleteSelectedNoiseSource()" class="p-1 rounded text-red-400 hover:bg-red-950/60 transition" title="Eliminar">
+                                    <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-xs">
+                            <span class="text-[10px] text-slate-400 block mb-1">Preset de Agente:</span>
+                            <select id="noise-type-preset" onchange="onNoisePresetChange(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-rose-300 font-semibold text-xs focus:border-rose-400 focus:outline-none">
+                                <option value="microwave">Horno de Microondas (Fuga 2.45 GHz)</option>
+                                <option value="led">Luminaria LED / Balastra (Broadband EMI)</option>
+                                <option value="coffee">Cafetera Industrial Express</option>
+                                <option value="speaker">Altavoces Inalámbricos BT FHSS (2.4 GHz)</option>
+                                <option value="hvac">Clima HVAC Compresor Inverter</option>
+                                <option value="radar">Sensor Radar Doppler 5.8 GHz</option>
+                                <option value="custom">Emisor Personalizado...</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Identificador:</span>
+                                <input id="noise-name-input" type="text" oninput="updateActiveNoiseProp('name', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:border-rose-400 focus:outline-none">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-1">Banda Afectada:</span>
+                                <select id="noise-band-select" onchange="updateActiveNoiseProp('targetBand', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-amber-300 font-semibold text-xs focus:border-rose-400 focus:outline-none">
+                                    <option value="2.4">Banda 2.4 GHz</option>
+                                    <option value="5.0">Banda 5.0 GHz</option>
+                                    <option value="6.0">Banda 6.0 GHz</option>
+                                    <option value="all">Banda Ancha (Todas)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] text-slate-400">Potencia Emisión:</span>
+                                    <span id="noise-power-val" class="font-mono text-rose-300 font-bold text-[11px]">23 dBm</span>
+                                </div>
+                                <input id="noise-power-slider" type="range" min="0" max="35" step="1" value="23" oninput="updateActiveNoiseProp('power', parseFloat(this.value))" class="w-full h-1.5 bg-slate-800 rounded">
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] text-slate-400">Ciclo de Trabajo:</span>
+                                    <span id="noise-duty-val" class="font-mono text-amber-300 font-bold text-[11px]">50%</span>
+                                </div>
+                                <input id="noise-duty-slider" type="range" min="10" max="100" step="5" value="50" oninput="updateActiveNoiseProp('dutyCycle', parseFloat(this.value))" class="w-full h-1.5 bg-slate-800 rounded">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-400 uppercase tracking-wider">Fuentes de Ruido Activas</span>
+                            <button onclick="addNewNoiseSource()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar Fuente
+                            </button>
+                        </div>
+                        <div id="noise-list-container" class="max-h-56 overflow-y-auto space-y-1.5 pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA MUROS -->
+                <div id="tab-content-walls" class="hidden space-y-3.5">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <label class="font-semibold uppercase tracking-wider text-slate-400">Preset de Material</label>
+                            <span id="preset-badge" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Ladrillo (6 dB)</span>
+                        </div>
+                        <select id="material-preset" onchange="onPresetChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                            <option value="drywall">Tablaroca / Drywall (3 dB)</option>
+                            <option value="brick" selected>Ladrillo Estándar (6 dB)</option>
+                            <option value="concrete">Concreto Armado (15 dB)</option>
+                            <option value="metal">Metal / Blindaje (28 dB)</option>
+                            <option value="glass">Vidrio Arquitectónico (2.5 dB)</option>
+                            <option value="custom">Atenuación Personalizada...</option>
+                        </select>
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-slate-950/90 border border-slate-800 space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-xs font-bold text-cyan-400 flex items-center gap-1">
+                                <i data-lucide="box" class="w-3.5 h-3.5"></i> Muro Activo: <span id="active-wall-index" class="text-white">Ninguno</span>
+                            </span>
+                            <button id="btn-delete-wall" onclick="deleteActiveWall()" disabled class="p-1 rounded text-red-400 hover:bg-red-950/60 disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-[10px] text-slate-400 block">Longitud Real:</span>
+                                <span id="active-wall-length" class="font-mono font-bold text-white text-xs">-- m</span>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-[10px] text-slate-400 block">Altura Z:</span>
+                                <div class="flex items-center gap-1">
+                                    <input id="active-wall-height" type="number" step="0.1" min="1.0" max="10.0" value="2.8" oninput="updateActiveWallHeight(this.value)" class="w-full bg-transparent font-mono font-bold text-cyan-300 text-xs focus:outline-none">
+                                    <span class="text-[10px] text-slate-500">m</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Pérdida RF (Atenuación):</span>
+                                <span id="wall-attenuation-val" class="font-mono font-bold text-amber-400">6.0 dB</span>
+                            </div>
+                            <input id="wall-attenuation-slider" type="range" min="0.5" max="40" step="0.5" value="6" oninput="updateActiveWallAttenuation(this.value)" class="w-full h-1.5 bg-slate-800 rounded">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-400 uppercase tracking-wider">Muros Arquitectónicos</span>
+                            <span id="walls-counter-badge" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">0</span>
+                        </div>
+                        <div id="walls-list-container" class="max-h-48 overflow-y-auto space-y-1 pr-1 text-xs"></div>
+                    </div>
+                </div>
+
+                <!-- Escala métrica -->
+                <div class="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1.5">
+                    <div class="flex items-center justify-between text-xs font-semibold text-amber-400">
+                        <span class="flex items-center gap-1.5"><i data-lucide="scale" class="w-3.5 h-3.5"></i> Escala Métrica</span>
+                        <span id="scale-ratio-text" class="font-mono text-[11px] text-slate-400">25 px = 1.0 m</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 text-[11px] text-slate-400">Píxeles por metro:</div>
+                        <input id="input-ppm" type="number" min="5" max="150" value="25" onchange="setPPM(this.value)" class="w-20 px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs font-mono text-cyan-300 text-right focus:outline-none focus:border-cyan-400">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-2.5 bg-slate-950 border-t border-slate-800 flex flex-col gap-1 text-[11px] text-slate-400">
+                <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-1.5"><i data-lucide="maximize-2" class="w-3.5 h-3.5 text-cyan-400"></i> Plano:</span>
+                    <span id="canvas-dim-label" class="font-mono text-cyan-300">0 x 0 m</span>
+                </div>
+                <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                    <span id="author-footer-signature" class="text-cyan-400/90 font-medium tracking-tight">Diseñado por Ing. G. Leonardo Dominguez Garcia</span>
+                    <button onclick="openAuthorModal()" class="text-slate-400 hover:text-cyan-300 transition underline underline-offset-2">Créditos</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ÁREA CENTRAL DE VISUALIZACIÓN -->
+        <main class="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden">
+
+            <!-- CONTENEDOR 2D -->
+            <div id="container-2d" class="relative w-full h-full canvas-grid flex items-center justify-center">
+                <canvas id="heatmapCanvas" class="absolute inset-0 cursor-crosshair"></canvas>
+
+                <div class="absolute top-4 left-4 glass-panel px-3.5 py-2 rounded-xl flex items-center gap-2.5 pointer-events-none shadow-xl border border-slate-700/60">
+                    <span id="mode-pill" class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                    <span id="mode-text" class="text-xs font-mono text-slate-200 font-medium">Modo: Selección & Movimiento</span>
+                </div>
+
+                <div class="absolute bottom-4 left-4 glass-panel px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-mono text-slate-200 pointer-events-none shadow-xl border border-slate-700/60">
+                    <div class="flex flex-col items-center">
+                        <div id="visual-scale-bar" class="h-1.5 bg-cyan-400 rounded-full" style="width: 125px;"></div>
+                        <span id="visual-scale-text" class="mt-1 text-[11px] font-bold text-cyan-300">5.0 Metros</span>
+                    </div>
+                    <div class="border-l border-slate-700 pl-3 flex flex-col">
+                        <span class="text-[10px] text-slate-400">Topología de Red</span>
+                        <span id="indicator-topology" class="text-cyan-400 font-bold text-xs">0 APs / 0 STAs</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR 3D (THREE.JS) -->
+            <div id="container-3d" class="absolute inset-0 w-full h-full hidden bg-slate-950">
+                <div id="three-viewport" class="w-full h-full"></div>
+                <div class="absolute top-4 left-4 glass-panel px-3.5 py-2.5 rounded-xl text-xs text-slate-200 pointer-events-none shadow-xl border border-slate-700/60 flex flex-col gap-1">
+                    <div class="font-bold text-cyan-400 flex items-center gap-1.5">
+                        <i data-lucide="box" class="w-4 h-4"></i> Entorno Arquitectónico RF 3D Multi-AP
+                    </div>
+                    <span class="text-[11px] text-slate-400">&bull; Extrusión volumétrica de muros en Z &bull; Radiadores 3D por AP</span>
+                    <span class="text-[11px] text-slate-400">&bull; Haces tridimensionales dinámicos AP &harr; Dispositivos enlazados</span>
+                    <span class="text-[11px] text-slate-400">&bull; Órbita: Clic Izquierdo | Paneo: Clic Derecho | Zoom: Rueda</span>
+                    <span id="author-badge-3d" class="text-[10px] text-cyan-300/80 pt-1 border-t border-slate-700/60">Motor 3D &bull; Diseñado por Ing. G. Leonardo Dominguez Garcia</span>
+                </div>
+            </div>
+
+            <!-- ESCALA EN DECIBELES (PARTE INFERIOR DERECHA) -->
+            <div id="legend-scale-container" class="absolute bottom-4 right-4 glass-panel p-3 rounded-2xl shadow-2xl flex flex-col space-y-1.5 z-20 w-72 border border-slate-700/70 pointer-events-auto">
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-200">
+                    <span id="legend-scale-title" class="flex items-center gap-1.5">
+                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-cyan-400"></i> Intensidad de Señal (RSSI)
+                    </span>
+                    <span id="legend-scale-unit" class="font-mono text-cyan-300 text-[11px] font-bold">dBm</span>
+                </div>
+                <div id="legend-scale-gradient" class="h-3 rounded-full w-full border border-slate-700/80 shadow-inner" style="background: linear-gradient(to right, #1e1b4b 0%, #2563eb 20%, #06b6d4 40%, #10b981 60%, #eab308 80%, #ef4444 100%);"></div>
+                <div id="legend-scale-markers" class="flex justify-between text-[10px] font-mono font-medium text-slate-300">
+                    <span>-95</span>
+                    <span>-80</span>
+                    <span>-70</span>
+                    <span>-60</span>
+                    <span>-45</span>
+                    <span>-30</span>
+                </div>
+                <div id="legend-scale-desc" class="flex justify-between text-[9px] text-slate-400 border-t border-slate-800/80 pt-1">
+                    <span class="text-rose-400 font-semibold">&lt; -85 Desconectado</span>
+                    <span class="text-emerald-400 font-semibold">&gt; -65 Óptimo Wi-Fi 7</span>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL DE CALIBRACIÓN -->
+    <div id="calibration-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full p-5 rounded-2xl border border-amber-500/40 shadow-2xl space-y-4">
+            <div class="flex items-center gap-2.5 text-amber-400">
+                <i data-lucide="ruler" class="w-5 h-5"></i>
+                <h3 class="text-sm font-bold">Fijar Medida Real de Referencia</h3>
+            </div>
+            <p class="text-xs text-slate-300">
+                Ingresa la longitud en metros reales del segmento trazado:
+            </p>
+            <div class="flex items-center gap-2">
+                <input id="modal-distance-input" type="number" step="0.1" min="0.5" max="500" value="5.0" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-cyan-300 font-mono focus:outline-none focus:border-amber-400">
+                <span class="text-xs text-slate-400 font-semibold">Metros</span>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="cancelCalibration()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-300 transition">Cancelar</button>
+                <button onclick="applyCalibration()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-semibold text-white transition shadow-lg shadow-amber-600/30">Calibrar Escala</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AUTORÍA -->
+    <div id="author-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-cyan-500/50 shadow-2xl space-y-4 relative">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5 text-cyan-400">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-author-title" class="text-sm font-bold text-white">Ing. G. Leonardo Dominguez Garcia</h3>
+                        <p class="text-[10px] text-slate-400">Propiedad Intelectual & Arquitectura RF</p>
+                    </div>
+                </div>
+                <button onclick="closeAuthorModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-xs text-slate-300">
+                <p>
+                    <strong>RF Heatmap Studio Enterprise</strong> es una plataforma diseñada y desarrollada por el <span class="text-cyan-300 font-semibold">Ing. G. Leonardo Dominguez Garcia</span> para la simulación precisa de propagación electromagnética Wi-Fi en 2D y 3D.
+                </p>
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5 font-mono text-[11px]">
+                    <div class="text-slate-400">Arquitecto & Diseñador:</div>
+                    <div class="text-cyan-300 font-bold">Ing. G. Leonardo Dominguez Garcia</div>
+                    <div class="text-slate-400 pt-1">Modelado Físico:</div>
+                    <div class="text-slate-200">FSPL, Partición de Muros 3D, Patrones Direccionales, SINR & Roaming</div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeAuthorModal()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ANALIZADOR DE ESPECTRO RF -->
+    <div id="spectrum-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-4xl w-full p-5 rounded-2xl border border-emerald-500/50 shadow-2xl space-y-4 flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-md">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-white tracking-wide">Analizador de Espectro RF en Tiempo Real</h3>
+                            <span id="spectrum-device-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/50 text-emerald-300 font-mono">STA: Laptop 1</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Densidad espectral PSD recibida, ocupación de canales e interferencias no-WiFi</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-700/80 gap-1">
+                    <button id="spec-band-24" onclick="setSpectrumBand('2.4')" class="px-2.5 py-1 rounded text-xs font-bold transition bg-emerald-600 text-white shadow">
+                        2.4 GHz
+                    </button>
+                    <button id="spec-band-50" onclick="setSpectrumBand('5.0')" class="px-2.5 py-1 rounded text-xs font-bold transition text-slate-400 hover:text-slate-200">
+                        5.0 GHz (UNII 1-3)
+                    </button>
+                    <button id="spec-band-60" onclick="setSpectrumBand('6.0')" class="px-2.5 py-1 rounded text-xs font-bold transition text-slate-400 hover:text-slate-200">
+                        6.0 GHz (Wi-Fi 6E/7)
+                    </button>
+                    <button onclick="closeSpectrumModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition ml-2">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="spectrum-canvas-wrapper" class="relative w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden" style="height: 320px;">
+                <canvas id="spectrumCanvas" class="w-full h-full block"></canvas>
+                <div class="absolute top-2.5 left-3 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-1 rounded border border-slate-800 pointer-events-none">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Modulación: OFDM / OFDMA</span>
+                    <span class="text-slate-600">|</span>
+                    <span id="spectrum-current-band-label" class="text-emerald-300 font-bold">Banda 2.4 GHz ISM</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 text-xs">
+                <div class="col-span-2 bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-300 border-b border-slate-800 pb-1">
+                        <span class="flex items-center gap-1.5"><i data-lucide="wifi" class="w-3.5 h-3.5 text-cyan-400"></i> Emisiones Wi-Fi e Interferencia en la Banda</span>
+                        <span id="spectrum-detected-count" class="font-mono text-cyan-300 text-[10px]">0 detectados</span>
+                    </div>
+                    <div id="spectrum-signals-list" class="max-h-24 overflow-y-auto space-y-1.5 pr-1 text-[11px] font-mono"></div>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1.5">Diagnóstico Espectral</span>
+                        <div class="space-y-1.5 text-[11px] font-mono">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Piso de Ruido:</span>
+                                <span id="spectrum-summary-noise" class="text-rose-400 font-bold">-95 dBm</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Mejor Señal (RSSI):</span>
+                                <span id="spectrum-summary-rssi" class="text-emerald-400 font-bold">-- dBm</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Canal Recomendado:</span>
+                                <span id="spectrum-summary-rec-channel" class="text-cyan-400 font-bold">Canal 1</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-400">
+                        <span>Solapamiento:</span>
+                        <span id="spectrum-summary-status" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-semibold">Limpio</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT & MOTOR ELECTROMAGNÉTICO -->
+    <script>
+        const AUTHOR_CREDITS = Object.freeze({
+            AUTHOR: 'Ing. G. Leonardo Dominguez Garcia',
+            TITLE: 'Diseñado por Ing. G. Leonardo Dominguez Garcia',
+            ROLE: 'Arquitecto de Software & Diseñador de Simulación RF',
+            APP_NAME: 'RF Heatmap Studio Enterprise',
+            YEAR: '2026',
+            SIGNATURE: 'G. Leonardo Dominguez Garcia - Ingeniero'
+        });
+
+        function ensureAuthorIntegrity() {
+            const headerElem = document.getElementById('author-name-header');
+            if (headerElem && headerElem.textContent !== AUTHOR_CREDITS.TITLE) headerElem.textContent = AUTHOR_CREDITS.TITLE;
+            const footerElem = document.getElementById('author-footer-signature');
+            if (footerElem && footerElem.textContent !== AUTHOR_CREDITS.TITLE) footerElem.textContent = AUTHOR_CREDITS.TITLE;
+            const modalTitle = document.getElementById('modal-author-title');
+            if (modalTitle && modalTitle.textContent !== AUTHOR_CREDITS.AUTHOR) modalTitle.textContent = AUTHOR_CREDITS.AUTHOR;
+            const badge3D = document.getElementById('author-badge-3d');
+            if (badge3D && !badge3D.textContent.includes(AUTHOR_CREDITS.AUTHOR)) badge3D.textContent = `Motor 3D • ${AUTHOR_CREDITS.TITLE}`;
+            if (document.title.indexOf(AUTHOR_CREDITS.AUTHOR) === -1) {
+                document.title = `RF Heatmap Studio Enterprise 2D/3D | ${AUTHOR_CREDITS.TITLE}`;
+            }
+        }
+        setInterval(ensureAuthorIntegrity, 2500);
+
+        lucide.createIcons();
+
+        const AP_COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981'];
+
+        // Catálogo de canales Wi-Fi por banda
+        const WIFI_CHANNELS = {
+            '2.4': [
+                { ch: 1, freq: 2412, rec: true },
+                { ch: 2, freq: 2417 },
+                { ch: 3, freq: 2422 },
+                { ch: 4, freq: 2427 },
+                { ch: 5, freq: 2432 },
+                { ch: 6, freq: 2437, rec: true },
+                { ch: 7, freq: 2442 },
+                { ch: 8, freq: 2447 },
+                { ch: 9, freq: 2452 },
+                { ch: 10, freq: 2457 },
+                { ch: 11, freq: 2462, rec: true },
+                { ch: 12, freq: 2467 },
+                { ch: 13, freq: 2472 }
+            ],
+            '5.0': [
+                { ch: 36, freq: 5180, rec: true },
+                { ch: 40, freq: 5200 },
+                { ch: 44, freq: 5220 },
+                { ch: 48, freq: 5240, rec: true },
+                { ch: 52, freq: 5260 },
+                { ch: 56, freq: 5280 },
+                { ch: 60, freq: 5300 },
+                { ch: 64, freq: 5320 },
+                { ch: 100, freq: 5500, rec: true },
+                { ch: 104, freq: 5520 },
+                { ch: 108, freq: 5540 },
+                { ch: 112, freq: 5560 },
+                { ch: 116, freq: 5580 },
+                { ch: 132, freq: 5660 },
+                { ch: 136, freq: 5680 },
+                { ch: 140, freq: 5700 },
+                { ch: 149, freq: 5745, rec: true },
+                { ch: 153, freq: 5765 },
+                { ch: 157, freq: 5785 },
+                { ch: 161, freq: 5805 },
+                { ch: 165, freq: 5825 }
+            ],
+            '6.0': [
+                { ch: 1, freq: 5955, rec: true },
+                { ch: 5, freq: 5975 },
+                { ch: 9, freq: 5995 },
+                { ch: 17, freq: 6035 },
+                { ch: 33, freq: 6115, rec: true },
+                { ch: 49, freq: 6195 },
+                { ch: 65, freq: 6275, rec: true },
+                { ch: 81, freq: 6355 },
+                { ch: 97, freq: 6435, rec: true },
+                { ch: 113, freq: 6515 },
+                { ch: 129, freq: 6595, rec: true },
+                { ch: 145, freq: 6675 },
+                { ch: 161, freq: 6755 },
+                { ch: 177, freq: 6835 },
+                { ch: 193, freq: 6915 },
+                { ch: 209, freq: 6995 },
+                { ch: 225, freq: 7075 }
+            ]
+        };
+
+        function getChannelFreqMHz(band, ch) {
+            const bandKey = parseFloat(band).toFixed(1);
+            const list = WIFI_CHANNELS[bandKey] || WIFI_CHANNELS['5.0'];
+            const found = list.find(c => c.ch === ch);
+            return found ? found.freq : (parseFloat(band) * 1000);
+        }
+
+        const state = {
+            view: '2d',
+            tool: 'select',
+            heatmapMode: 'composite',
+            pixelsPerMeter: 25.0,
+            gridStep: 10,
+            activeTab: 'aps',
+            spectrumBand: '2.4',
+
+            activeAPId: 1,
+            activeClientId: 1,
+            activeNoiseId: 1,
+            activeWallIndex: -1,
+
+            draggingObject: null,
+            tempLine: null,
+            calibratingPixels: 0,
+
+            currentPreset: 'brick',
+            presetAttenuation: 6.0,
+            defaultWallHeight: 2.8,
+
+            accessPoints: [
+                {
+                    id: 1,
+                    name: 'AP-1 Hall',
+                    x: 230,
+                    y: 190,
+                    height: 2.6,
+                    txPower: 20,
+                    freq: 5.0,
+                    channel: 36,
+                    channelWidth: 80,
+                    antennaType: 'omni',
+                    beamwidth: 60,
+                    azimuth: 0,
+                    antennaGain: 3.0,
+                    frontToBack: 25.0,
+                    color: '#06b6d4'
+                },
+                {
+                    id: 2,
+                    name: 'AP-2 Sectorial',
+                    x: 520,
+                    y: 360,
+                    height: 2.6,
+                    txPower: 18,
+                    freq: 2.4,
+                    channel: 6,
+                    channelWidth: 20,
+                    antennaType: 'directional',
+                    beamwidth: 60,
+                    azimuth: 225,
+                    antennaGain: 9.0,
+                    frontToBack: 26.0,
+                    color: '#8b5cf6'
+                }
+            ],
+
+            noiseSources: [
+                {
+                    id: 1,
+                    name: 'Horno Microondas',
+                    type: 'microwave',
+                    x: 320,
+                    y: 280,
+                    height: 1.0,
+                    power: 24,
+                    dutyCycle: 60,
+                    targetBand: '2.4',
+                    active: true,
+                    icon: 'microwave',
+                    color: '#f43f5e'
+                },
+                {
+                    id: 2,
+                    name: 'Compresor Clima HVAC',
+                    type: 'hvac',
+                    x: 610,
+                    y: 470,
+                    height: 2.4,
+                    power: 18,
+                    dutyCycle: 80,
+                    targetBand: 'all',
+                    active: true,
+                    icon: 'wind',
+                    color: '#f97316'
+                }
+            ],
+
+            clients: [
+                {
+                    id: 1,
+                    name: 'Laptop Gerencia',
+                    type: 'laptop',
+                    standard: 'wifi7',
+                    x: 480,
+                    y: 180,
+                    height: 1.1,
+                    forcedAP: 'auto',
+                    associatedAPId: null,
+                    antennaGain: 2.5,
+                    noiseFloor: -95
+                },
+                {
+                    id: 2,
+                    name: 'Smartphone Móvil',
+                    type: 'phone',
+                    standard: 'wifi6',
+                    x: 200,
+                    y: 380,
+                    height: 1.1,
+                    forcedAP: 'auto',
+                    associatedAPId: null,
+                    antennaGain: 0.5,
+                    noiseFloor: -95
+                }
+            ],
+
+            walls: [
+                { id: 1, x1: 90,  y1: 70,  x2: 670, y2: 70,  attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Norte' },
+                { id: 2, x1: 90,  y1: 70,  x2: 90,  y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Oeste' },
+                { id: 3, x1: 670, y1: 70,  x2: 670, y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Este' },
+                { id: 4, x1: 90,  y1: 520, x2: 670, y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Sur' },
+                { id: 5, x1: 370, y1: 70,  x2: 370, y2: 340, attenuation: 6.0,  height: 2.8, material: 'brick',    name: 'Muro Centro' },
+                { id: 6, x1: 370, y1: 340, x2: 560, y2: 340, attenuation: 3.0,  height: 2.6, material: 'drywall',  name: 'Divisoria Tabique' },
+                { id: 7, x1: 170, y1: 340, x2: 370, y2: 340, attenuation: 2.5,  height: 2.6, material: 'glass',    name: 'Ventanal Vidrio' }
+            ]
+        };
+
+        const canvas = document.getElementById('heatmapCanvas');
+        const ctx = canvas.getContext('2d');
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d');
+
+        function calculateNoisePowerFromSource(source, targetX, targetY, targetZ = 1.1, receiverBand = 5.0) {
+            if (!source.active) return -140;
+
+            let spectralCoupling = 1.0;
+            if (source.targetBand === 'all') {
+                spectralCoupling = 0.85;
+            } else {
+                const targetBandNum = parseFloat(source.targetBand);
+                const diff = Math.abs(targetBandNum - receiverBand);
+                if (diff < 0.3) spectralCoupling = 1.0;
+                else if (diff < 1.0) spectralCoupling = 0.35;
+                else spectralCoupling = 0.05;
+            }
+
+            if (spectralCoupling <= 0.01) return -140;
+
+            const dxM = (targetX - source.x) / state.pixelsPerMeter;
+            const dyM = (targetY - source.y) / state.pixelsPerMeter;
+            const dzM = (targetZ - source.height);
+            let distanceMeters = Math.sqrt(dxM * dxM + dyM * dyM + dzM * dzM);
+            if (distanceMeters < 0.4) distanceMeters = 0.4;
+
+            const freqMHz = (source.targetBand === 'all' ? receiverBand : parseFloat(source.targetBand)) * 1000;
+            const fspl = (20 * Math.log10(distanceMeters)) + (20 * Math.log10(freqMHz)) - 27.55;
+
+            let totalWallLoss = 0;
+            for (let i = 0; i < state.walls.length; i++) {
+                const wall = state.walls[i];
+                if (segmentsIntersect(source.x, source.y, targetX, targetY, wall.x1, wall.y1, wall.x2, wall.y2)) {
+                    totalWallLoss += wall.attenuation;
+                }
+            }
+
+            const dutyFactor = 10 * Math.log10(Math.max(0.1, source.dutyCycle / 100));
+            const couplingFactor = 10 * Math.log10(spectralCoupling);
+            return source.power + dutyFactor + couplingFactor - fspl - totalWallLoss;
+        }
+
+        function calculateTotalNoiseFloorAt(targetX, targetY, targetZ = 1.1, receiverBand = 5.0) {
+            const thermalNoise_dBm = -95;
+            let totalPower_mW = Math.pow(10, thermalNoise_dBm / 10);
+
+            for (let i = 0; i < state.noiseSources.length; i++) {
+                const src = state.noiseSources[i];
+                if (!src.active) continue;
+                const noisePwr = calculateNoisePowerFromSource(src, targetX, targetY, targetZ, receiverBand);
+                if (noisePwr > -130) totalPower_mW += Math.pow(10, noisePwr / 10);
+            }
+            return 10 * Math.log10(totalPower_mW);
+        }
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function segmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+            function ccw(ax, ay, bx, by, cx, cy) {
+                return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
+            }
+            return (ccw(x1, y1, x3, y3, x4, y4) !== ccw(x2, y2, x3, y3, x4, y4)) &&
+                   (ccw(x1, y1, x2, y2, x3, y3) !== ccw(x1, y1, x2, y2, x4, y4));
+        }
+
+        function distanceToSegment(px, py, x1, y1, x2, y2) {
+            const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+            if (l2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+        }
+
+        function rssiToColor(rssi) {
+            let norm = (rssi - (-95)) / ((-30) - (-95));
+            norm = Math.max(0, Math.min(1, norm));
+
+            let r, g, b;
+            if (norm < 0.2) {
+                r = Math.round(30 + norm * 5 * 10);
+                g = Math.round(27 + norm * 5 * 80);
+                b = Math.round(75 + norm * 5 * 160);
+            } else if (norm < 0.4) {
+                const t = (norm - 0.2) / 0.2;
+                r = Math.round(40 + t * 20);
+                g = Math.round(107 + t * 100);
+                b = Math.round(235 - t * 40);
+            } else if (norm < 0.6) {
+                const t = (norm - 0.4) / 0.2;
+                r = Math.round(60 - t * 44);
+                g = Math.round(207 - t * 22);
+                b = Math.round(195 - t * 114);
+            } else if (norm < 0.8) {
+                const t = (norm - 0.6) / 0.2;
+                r = Math.round(16 + t * 218);
+                g = Math.round(185 - t * 6);
+                b = Math.round(81 - t * 73);
+            } else {
+                const t = (norm - 0.8) / 0.2;
+                r = Math.round(234 + t * 5);
+                g = Math.round(179 - t * 111);
+                b = Math.round(8 - t * 4);
+            }
+            return `rgba(${r}, ${g}, ${b}, 0.75)`;
+        }
+
+        function sinrToColor(sinr) {
+            let norm = Math.max(0, Math.min(1, sinr / 35));
+            let r, g, b;
+            if (norm < 0.25) { r = 220; g = 38; b = 38; }
+            else if (norm < 0.50) { r = 234; g = 179; b = 8; }
+            else if (norm < 0.75) { r = 16; g = 185; b = 129; }
+            else { r = 6; g = 182; b = 212; }
+            return `rgba(${r}, ${g}, ${b}, 0.72)`;
+        }
+
+        function noiseToColor(noise) {
+            let norm = Math.max(0, Math.min(1, (noise - (-95)) / ((-45) - (-95))));
+            let r = Math.round(30 + norm * 225);
+            let g = Math.round(20 * (1 - norm));
+            let b = Math.round(50 + (1 - norm) * 120);
+            return `rgba(${r}, ${g}, ${b}, ${0.15 + norm * 0.65})`;
+        }
+
+        function getAntennaGainInDirection(ap, targetX, targetY) {
+            const maxGain = ap.antennaGain !== undefined ? ap.antennaGain : 3.0;
+            if (ap.antennaType !== 'directional') return maxGain;
+
+            const dx = targetX - ap.x;
+            const dy = targetY - ap.y;
+            if (Math.hypot(dx, dy) < 1e-4) return maxGain;
+
+            let angleDeg = (Math.atan2(dy, dx) * 180 / Math.PI);
+            if (angleDeg < 0) angleDeg += 360;
+
+            let diff = angleDeg - (ap.azimuth || 0);
+            while (diff > 180) diff -= 360;
+            while (diff < -180) diff += 360;
+            const absTheta = Math.abs(diff);
+
+            const hpbw = ap.beamwidth || 60;
+            const f2b = ap.frontToBack || 25.0;
+            const atten = Math.min(12 * Math.pow(absTheta / hpbw, 2), f2b);
+            return maxGain - atten;
+        }
+
+        function calculateSignalFromAP(ap, targetX, targetY, targetZ = 1.1) {
+            const dxM = (targetX - ap.x) / state.pixelsPerMeter;
+            const dyM = (targetY - ap.y) / state.pixelsPerMeter;
+            const dzM = (targetZ - ap.height);
+            let distanceMeters = Math.sqrt(dxM * dxM + dyM * dyM + dzM * dzM);
+            if (distanceMeters < 0.5) distanceMeters = 0.5;
+
+            const freqMHz = getChannelFreqMHz(ap.freq, ap.channel);
+            const fspl = (20 * Math.log10(distanceMeters)) + (20 * Math.log10(freqMHz)) - 27.55;
+            const freqFactor = (ap.freq === 2.4) ? 1.0 : (ap.freq === 5.0 ? 1.25 : 1.45);
+
+            let totalWallLoss = 0;
+            for (let i = 0; i < state.walls.length; i++) {
+                const wall = state.walls[i];
+                if (segmentsIntersect(ap.x, ap.y, targetX, targetY, wall.x1, wall.y1, wall.x2, wall.y2)) {
+                    const maxWallH = wall.height || 2.8;
+                    const rayHeight = (ap.height + targetZ) / 2;
+                    if (rayHeight <= maxWallH) {
+                        totalWallLoss += (wall.attenuation * freqFactor);
+                    }
+                }
+            }
+
+            const directionalGain = getAntennaGainInDirection(ap, targetX, targetY);
+            return ap.txPower + directionalGain - fspl - totalWallLoss;
+        }
+
+        function calculateCompositeSignalAt(targetX, targetY, targetZ = 1.1) {
+            if (state.accessPoints.length === 0) return -120;
+            if (state.heatmapMode === 'selected') {
+                const ap = state.accessPoints.find(a => a.id === state.activeAPId);
+                return ap ? calculateSignalFromAP(ap, targetX, targetY, targetZ) : -120;
+            }
+
+            let maxRssi = -140;
+            for (let i = 0; i < state.accessPoints.length; i++) {
+                const rssi = calculateSignalFromAP(state.accessPoints[i], targetX, targetY, targetZ);
+                if (rssi > maxRssi) maxRssi = rssi;
+            }
+            return maxRssi;
+        }
+
+        function getClientLinkTelemetry(client, ap) {
+            if (!ap) return null;
+
+            const dxPx = client.x - ap.x;
+            const dyPx = client.y - ap.y;
+            const dist2DM = Math.hypot(dxPx, dyPx) / state.pixelsPerMeter;
+            const dzM = Math.abs((client.height || 1.1) - ap.height);
+            const dist3DM = Math.sqrt(dist2DM * dist2DM + dzM * dzM);
+
+            const freqFactor = (ap.freq === 2.4) ? 1.0 : (ap.freq === 5.0 ? 1.25 : 1.45);
+            let wallsCrossed = 0;
+            let totalWallLoss = 0;
+
+            for (let i = 0; i < state.walls.length; i++) {
+                const wall = state.walls[i];
+                if (segmentsIntersect(ap.x, ap.y, client.x, client.y, wall.x1, wall.y1, wall.x2, wall.y2)) {
+                    const maxWallH = wall.height || 2.8;
+                    const rayHeight = (ap.height + (client.height || 1.1)) / 2;
+                    if (rayHeight <= maxWallH) {
+                        wallsCrossed++;
+                        totalWallLoss += (wall.attenuation * freqFactor);
+                    }
+                }
+            }
+
+            const rawRssi = calculateSignalFromAP(ap, client.x, client.y, client.height || 1.1);
+            const clientRssi = rawRssi + client.antennaGain;
+            const totalNoiseFloor = calculateTotalNoiseFloorAt(client.x, client.y, client.height || 1.1, ap.freq);
+            const sinr = Math.max(-10, Math.round(clientRssi - totalNoiseFloor));
+
+            let maxThroughput = 433;
+            if (client.standard === 'wifi5') maxThroughput = (client.type === 'phone' ? 433 : 867);
+            else if (client.standard === 'wifi6') maxThroughput = (client.type === 'phone' ? 1201 : 2402);
+            else if (client.standard === 'wifi7') maxThroughput = (client.type === 'phone' ? 2882 : 5764);
+
+            let throughput = 0;
+            const isConnected = clientRssi >= -86 && sinr >= 4;
+            if (isConnected) {
+                const sinrFactor = Math.min(1.0, Math.max(0.04, (sinr - 4) / 32));
+                throughput = Math.round(maxThroughput * sinrFactor);
+            }
+
+            return {
+                ap,
+                dist2D: dist2DM,
+                dist3D: dist3DM,
+                wallsCount: wallsCrossed,
+                wallLoss: totalWallLoss,
+                rssi: clientRssi,
+                noiseFloor: totalNoiseFloor,
+                sinr,
+                throughput,
+                isConnected
+            };
+        }
+
+        function updateClientAssociations() {
+            state.clients.forEach(client => {
+                if (state.accessPoints.length === 0) {
+                    client.associatedAPId = null;
+                    return;
+                }
+
+                if (client.forcedAP !== 'auto') {
+                    const forcedId = parseInt(client.forcedAP);
+                    const exists = state.accessPoints.some(a => a.id === forcedId);
+                    client.associatedAPId = exists ? forcedId : state.accessPoints[0].id;
+                    return;
+                }
+
+                let bestAP = null;
+                let bestScore = -999;
+                state.accessPoints.forEach(ap => {
+                    const rssi = calculateSignalFromAP(ap, client.x, client.y, client.height || 1.1);
+                    const noise = calculateTotalNoiseFloorAt(client.x, client.y, client.height || 1.1, ap.freq);
+                    const sinr = rssi - noise;
+                    const score = (sinr * 0.7) + (rssi * 0.3);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestAP = ap;
+                    }
+                });
+                client.associatedAPId = bestAP ? bestAP.id : null;
+            });
+        }
+
+        function setHeatmapMode(mode) {
+            state.heatmapMode = mode;
+            ['composite', 'selected', 'sinr', 'noise'].forEach(m => {
+                const btn = document.getElementById(`btn-hm-${m}`);
+                if (btn) {
+                    btn.className = m === mode ? 'px-2.5 py-1 rounded text-xs font-semibold transition-all bg-cyan-600 text-white shadow' : 'px-2.5 py-1 rounded text-xs font-semibold transition-all text-slate-400 hover:text-slate-200';
+                }
+            });
+            updateLegendUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateLegendUI() {
+            const title = document.getElementById('legend-scale-title');
+            const unit = document.getElementById('legend-scale-unit');
+            const grad = document.getElementById('legend-scale-gradient');
+            const marks = document.getElementById('legend-scale-markers');
+            const desc = document.getElementById('legend-scale-desc');
+
+            if (state.heatmapMode === 'sinr') {
+                title.innerHTML = `<i data-lucide="activity" class="w-3.5 h-3.5 text-amber-400"></i> Calidad RF (SINR)`;
+                unit.textContent = 'dB';
+                grad.style.background = 'linear-gradient(to right, #dc2626 0%, #eab308 35%, #10b981 70%, #06b6d4 100%)';
+                marks.innerHTML = `<span>0 dB</span><span>10 dB</span><span>20 dB</span><span>28 dB</span><span>>35 dB</span>`;
+                desc.innerHTML = `<span class="text-red-400">&lt; 8 dB Degradado</span><span class="text-cyan-400">&gt; 25 dB Máx QAM</span>`;
+            } else if (state.heatmapMode === 'noise') {
+                title.innerHTML = `<i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i> Piso de Ruido / Interf.`;
+                unit.textContent = 'dBm';
+                grad.style.background = 'linear-gradient(to right, #1e1b4b 0%, #4c1d95 30%, #be123c 65%, #f43f5e 100%)';
+                marks.innerHTML = `<span>-95</span><span>-85</span><span>-75</span><span>-60</span><span>-45 dBm</span>`;
+                desc.innerHTML = `<span class="text-emerald-400">&lt; -90 Limpio</span><span class="text-rose-400">&gt; -65 Crítico</span>`;
+            } else {
+                title.innerHTML = `<i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-cyan-400"></i> Intensidad Señal (RSSI)`;
+                unit.textContent = 'dBm';
+                grad.style.background = 'linear-gradient(to right, #1e1b4b 0%, #2563eb 20%, #06b6d4 40%, #10b981 60%, #eab308 80%, #ef4444 100%)';
+                marks.innerHTML = `<span>-95</span><span>-80</span><span>-70</span><span>-60</span><span>-45</span><span>-30</span>`;
+                desc.innerHTML = `<span class="text-red-400">&lt; -85 Desconectado</span><span class="text-emerald-400">&gt; -65 Óptimo</span>`;
+            }
+            lucide.createIcons();
+        }
+
+        function render2D() {
+            if (state.view !== '2d') return;
+            ensureAuthorIntegrity();
+            updateClientAssociations();
+
+            const w = offCanvas.width;
+            const h = offCanvas.height;
+            const step = state.gridStep;
+
+            ctx.clearRect(0, 0, w, h);
+            offCtx.clearRect(0, 0, w, h);
+
+            for (let x = 0; x < w; x += step) {
+                for (let y = 0; y < h; y += step) {
+                    const cx = x + step / 2;
+                    const cy = y + step / 2;
+
+                    if (state.heatmapMode === 'sinr') {
+                        const rssi = calculateCompositeSignalAt(cx, cy, 1.1);
+                        const primaryAP = state.accessPoints[0];
+                        const band = primaryAP ? primaryAP.freq : 5.0;
+                        const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, band);
+                        offCtx.fillStyle = sinrToColor(rssi - noise);
+                    } else if (state.heatmapMode === 'noise') {
+                        const primaryAP = state.accessPoints[0];
+                        const band = primaryAP ? primaryAP.freq : 2.4;
+                        const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, band);
+                        offCtx.fillStyle = noiseToColor(noise);
+                    } else {
+                        const rssi = calculateCompositeSignalAt(cx, cy, 1.1);
+                        offCtx.fillStyle = rssiToColor(rssi);
+                    }
+                    offCtx.fillRect(x, y, step, step);
+                }
+            }
+            ctx.drawImage(offCanvas, 0, 0);
+
+            for (let i = 0; i < state.walls.length; i++) drawWall2D(state.walls[i], i === state.activeWallIndex);
+            state.noiseSources.forEach(ns => drawNoiseSource2D(ns, ns.id === state.activeNoiseId));
+            state.clients.forEach(client => {
+                const ap = state.accessPoints.find(a => a.id === client.associatedAPId);
+                if (ap) drawClientLink2D(client, ap, getClientLinkTelemetry(client, ap));
+            });
+            state.accessPoints.forEach(ap => drawAP2D(ap, ap.id === state.activeAPId));
+            state.clients.forEach(client => drawClient2D(client, client.id === state.activeClientId));
+
+            if (state.tempLine) {
+                ctx.save();
+                ctx.strokeStyle = state.tool === 'calibrate' ? '#f59e0b' : '#38bdf8';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(state.tempLine.x1, state.tempLine.y1);
+                ctx.lineTo(state.tempLine.x2, state.tempLine.y2);
+                ctx.stroke();
+
+                const distM = (Math.hypot(state.tempLine.x2 - state.tempLine.x1, state.tempLine.y2 - state.tempLine.y1) / state.pixelsPerMeter).toFixed(2);
+                ctx.fillStyle = state.tool === 'calibrate' ? '#f59e0b' : '#38bdf8';
+                ctx.font = 'bold 11px monospace';
+                ctx.fillText(`${distM} m`, (state.tempLine.x1 + state.tempLine.x2)/2 + 8, (state.tempLine.y1 + state.tempLine.y2)/2 - 8);
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.font = '10px monospace';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.textAlign = 'right';
+            ctx.fillText(AUTHOR_CREDITS.TITLE, offCanvas.width - 15, offCanvas.height - 12);
+            ctx.restore();
+
+            updateTelemetryPanel();
+        }
+
+        function drawWall2D(wall, isSelected) {
+            ctx.save();
+            let strokeColor = '#94a3b8';
+            let lineWidth = 6;
+
+            if (wall.material === 'concrete') { strokeColor = '#64748b'; lineWidth = 7; }
+            else if (wall.material === 'brick') { strokeColor = '#d97706'; lineWidth = 6; }
+            else if (wall.material === 'drywall') { strokeColor = '#0284c7'; lineWidth = 4; }
+            else if (wall.material === 'metal') { strokeColor = '#ef4444'; lineWidth = 8; }
+            else if (wall.material === 'glass') { strokeColor = '#06b6d4'; lineWidth = 3; }
+
+            if (isSelected) {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = lineWidth + 6;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(wall.x1, wall.y1);
+                ctx.lineTo(wall.x2, wall.y2);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(wall.x1, wall.y1);
+            ctx.lineTo(wall.x2, wall.y2);
+            ctx.stroke();
+
+            const lenPx = Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1);
+            if (lenPx > 28) {
+                const lenM = (lenPx / state.pixelsPerMeter).toFixed(1);
+                const midX = (wall.x1 + wall.x2) / 2;
+                const midY = (wall.y1 + wall.y2) / 2;
+                const label = `${lenM}m | ${Number(wall.attenuation).toFixed(1)}dB`;
+
+                ctx.font = 'bold 9px monospace';
+                const textWidth = ctx.measureText(label).width;
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(51, 65, 85, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(midX - textWidth / 2 - 4, midY - 8, textWidth + 8, 16, 4);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = isSelected ? '#38bdf8' : '#e2e8f0';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, midX, midY);
+            }
+            ctx.restore();
+        }
+
+        function drawNoiseSource2D(ns, isSelected) {
+            ctx.save();
+            const radius = 13;
+
+            if (ns.active) {
+                const haloRadius = Math.max(35, (ns.power / 25) * 55);
+                const grad = ctx.createRadialGradient(ns.x, ns.y, radius, ns.x, ns.y, haloRadius);
+                grad.addColorStop(0, `${ns.color}55`);
+                grad.addColorStop(1, `${ns.color}00`);
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(ns.x, ns.y, haloRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (isSelected) {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(ns.x, ns.y, radius + 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = ns.active ? ns.color : '#475569';
+            ctx.beginPath();
+            ctx.arc(ns.x, ns.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(ns.x, ns.y, radius - 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = ns.active ? ns.color : '#94a3b8';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(ns.active ? '⚡' : '✖', ns.x, ns.y);
+
+            ctx.font = 'bold 9px monospace';
+            ctx.fillStyle = ns.active ? '#fca5a5' : '#94a3b8';
+            ctx.fillText(`${ns.name}`, ns.x, ns.y + radius + 12);
+            ctx.restore();
+        }
+
+        function drawAP2D(ap, isSelected) {
+            ctx.save();
+            const radius = 14;
+
+            if (ap.antennaType === 'directional') {
+                const azRad = (ap.azimuth || 0) * Math.PI / 180;
+                const halfBeamRad = ((ap.beamwidth || 60) / 2) * Math.PI / 180;
+                const coneRadius = Math.max(70, Math.min(180, (ap.antennaGain || 8) * 14));
+
+                const gradient = ctx.createRadialGradient(ap.x, ap.y, radius, ap.x, ap.y, coneRadius);
+                gradient.addColorStop(0, `${ap.color}66`);
+                gradient.addColorStop(1, `${ap.color}00`);
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(ap.x, ap.y);
+                ctx.arc(ap.x, ap.y, coneRadius, azRad - halfBeamRad, azRad + halfBeamRad);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(ap.x, ap.y);
+                ctx.lineTo(ap.x + Math.cos(azRad) * coneRadius * 0.9, ap.y + Math.sin(azRad) * coneRadius * 0.9);
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = `${ap.color}55`;
+                ctx.lineWidth = 1.5;
+                for (let r = radius + 6; r <= radius + 20; r += 7) {
+                    ctx.beginPath();
+                    ctx.arc(ap.x, ap.y, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            if (isSelected) {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(ap.x, ap.y, radius + 5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = ap.color;
+            ctx.beginPath();
+            ctx.arc(ap.x, ap.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ap.x, ap.y, radius - 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = ap.color;
+            ctx.beginPath();
+            ctx.arc(ap.x, ap.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#f8fafc';
+            ctx.textAlign = 'center';
+            const chTag = `CH ${ap.channel || 'Auto'}`;
+            ctx.fillText(`${ap.name} (${ap.freq}G • ${chTag})`, ap.x, ap.y + radius + 14);
+            ctx.restore();
+        }
+
+        function drawClient2D(client, isSelected) {
+            ctx.save();
+            const radius = 12;
+
+            if (isSelected) {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(client.x, client.y, radius + 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.arc(client.x, client.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#34d399';
+            ctx.beginPath();
+            ctx.arc(client.x, client.y, radius - 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(client.x, client.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#6ee7b7';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${client.name}`, client.x, client.y + radius + 13);
+            ctx.restore();
+        }
+
+        function drawClientLink2D(client, ap, tele) {
+            if (!tele) return;
+            ctx.save();
+
+            const isGood = tele.isConnected && tele.rssi >= -72;
+            ctx.beginPath();
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = isGood ? '#10b981' : '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.moveTo(ap.x, ap.y);
+            ctx.lineTo(client.x, client.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const midX = (ap.x + client.x) / 2;
+            const midY = (ap.y + client.y) / 2;
+            const badgeText = `d = ${tele.dist3D.toFixed(2)} m | ${tele.rssi.toFixed(0)} dBm (${tele.wallsCount} muros)`;
+
+            ctx.font = 'bold 11px monospace';
+            const bw = ctx.measureText(badgeText).width + 16;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+            ctx.strokeStyle = isGood ? '#10b981' : '#f59e0b';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.roundRect(midX - bw / 2, midY - 11, bw, 22, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(badgeText, midX, midY);
+            ctx.restore();
+        }
+
+        /* INTERACCIÓN CANVAS */
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getCanvasCoords(e);
+            if (state.tool === 'select') {
+                for (let i = state.noiseSources.length - 1; i >= 0; i--) {
+                    if (Math.hypot(pos.x - state.noiseSources[i].x, pos.y - state.noiseSources[i].y) <= 22) {
+                        selectNoiseSource(state.noiseSources[i].id);
+                        state.draggingObject = { type: 'noise', id: state.noiseSources[i].id };
+                        switchTab('noise');
+                        render2D();
+                        return;
+                    }
+                }
+                for (let i = state.accessPoints.length - 1; i >= 0; i--) {
+                    if (Math.hypot(pos.x - state.accessPoints[i].x, pos.y - state.accessPoints[i].y) <= 22) {
+                        selectAP(state.accessPoints[i].id);
+                        state.draggingObject = { type: 'ap', id: state.accessPoints[i].id };
+                        switchTab('aps');
+                        render2D();
+                        return;
+                    }
+                }
+                for (let i = state.clients.length - 1; i >= 0; i--) {
+                    if (Math.hypot(pos.x - state.clients[i].x, pos.y - state.clients[i].y) <= 20) {
+                        selectClient(state.clients[i].id);
+                        state.draggingObject = { type: 'client', id: state.clients[i].id };
+                        switchTab('clients');
+                        render2D();
+                        return;
+                    }
+                }
+                let foundWall = -1;
+                for (let i = state.walls.length - 1; i >= 0; i--) {
+                    if (distanceToSegment(pos.x, pos.y, state.walls[i].x1, state.walls[i].y1, state.walls[i].x2, state.walls[i].y2) < 12) {
+                        foundWall = i;
+                        break;
+                    }
+                }
+                setActiveWall(foundWall);
+                if (foundWall !== -1) switchTab('walls');
+                render2D();
+            } else if (state.tool === 'draw' || state.tool === 'calibrate') {
+                state.tempLine = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            const pos = getCanvasCoords(e);
+            if (state.draggingObject) {
+                if (state.draggingObject.type === 'ap') {
+                    const ap = state.accessPoints.find(a => a.id === state.draggingObject.id);
+                    if (ap) {
+                        ap.x = Math.max(20, Math.min(offCanvas.width - 20, pos.x));
+                        ap.y = Math.max(20, Math.min(offCanvas.height - 20, pos.y));
+                        render2D();
+                    }
+                } else if (state.draggingObject.type === 'client') {
+                    const cl = state.clients.find(c => c.id === state.draggingObject.id);
+                    if (cl) {
+                        cl.x = Math.max(20, Math.min(offCanvas.width - 20, pos.x));
+                        cl.y = Math.max(20, Math.min(offCanvas.height - 20, pos.y));
+                        render2D();
+                    }
+                } else if (state.draggingObject.type === 'noise') {
+                    const ns = state.noiseSources.find(n => n.id === state.draggingObject.id);
+                    if (ns) {
+                        ns.x = Math.max(20, Math.min(offCanvas.width - 20, pos.x));
+                        ns.y = Math.max(20, Math.min(offCanvas.height - 20, pos.y));
+                        render2D();
+                    }
+                }
+            } else if (state.tempLine) {
+                state.tempLine.x2 = pos.x;
+                state.tempLine.y2 = pos.y;
+                render2D();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (state.draggingObject) {
+                state.draggingObject = null;
+                render2D();
+                if (state.view === '3d') update3DScene();
+            }
+
+            if (state.tempLine) {
+                const lenPx = Math.hypot(state.tempLine.x2 - state.tempLine.x1, state.tempLine.y2 - state.tempLine.y1);
+                if (state.tool === 'calibrate') {
+                    if (lenPx > 10) {
+                        state.calibratingPixels = lenPx;
+                        document.getElementById('calibration-modal').classList.remove('hidden');
+                    }
+                    state.tempLine = null;
+                } else if (state.tool === 'draw') {
+                    if (lenPx > 15) {
+                        state.walls.push({
+                            id: Date.now(),
+                            x1: state.tempLine.x1,
+                            y1: state.tempLine.y1,
+                            x2: state.tempLine.x2,
+                            y2: state.tempLine.y2,
+                            attenuation: state.presetAttenuation,
+                            height: state.defaultWallHeight,
+                            material: state.currentPreset,
+                            name: `Muro ${state.walls.length + 1}`
+                        });
+                        setActiveWall(state.walls.length - 1);
+                        switchTab('walls');
+                    }
+                    state.tempLine = null;
+                    render2D();
+                    if (state.view === '3d') update3DScene();
+                }
+            }
+        });
+
+        function switchTab(tab) {
+            state.activeTab = tab;
+            ['aps', 'clients', 'noise', 'walls'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (btn && content) {
+                    if (t === tab) {
+                        btn.className = 'flex-1 py-2 text-center text-cyan-400 border-b-2 border-cyan-500 flex items-center justify-center gap-1';
+                        content.classList.remove('hidden');
+                    } else {
+                        btn.className = 'flex-1 py-2 text-center text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1';
+                        content.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        function onAPBandChange(freq) {
+            const ap = state.accessPoints.find(a => a.id === state.activeAPId);
+            if (!ap) return;
+            ap.freq = freq;
+
+            const bandKey = freq.toFixed(1);
+            const list = WIFI_CHANNELS[bandKey] || WIFI_CHANNELS['5.0'];
+            ap.channel = list[0].ch;
+
+            if (freq === 2.4 && ap.channelWidth > 40) ap.channelWidth = 20;
+
+            updateAPEditorUI();
+            updateAPListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function selectAP(id) {
+            state.activeAPId = id;
+            updateAPEditorUI();
+            updateAPListUI();
+        }
+
+        function addNewAP() {
+            const nextId = state.accessPoints.length > 0 ? Math.max(...state.accessPoints.map(a => a.id)) + 1 : 1;
+            const newAP = {
+                id: nextId,
+                name: `AP-${nextId}`,
+                x: 200 + (nextId * 40) % 360,
+                y: 180 + (nextId * 35) % 280,
+                height: 2.6,
+                txPower: 20,
+                freq: 5.0,
+                channel: 36,
+                channelWidth: 80,
+                antennaType: 'omni',
+                beamwidth: 60,
+                azimuth: 0,
+                antennaGain: 3.0,
+                frontToBack: 25.0,
+                color: AP_COLORS[(nextId - 1) % AP_COLORS.length]
+            };
+            state.accessPoints.push(newAP);
+            selectAP(nextId);
+            switchTab('aps');
+            setTool('select');
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function deleteSelectedAP() {
+            if (state.accessPoints.length <= 1) return;
+            state.accessPoints = state.accessPoints.filter(a => a.id !== state.activeAPId);
+            state.activeAPId = state.accessPoints[0].id;
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateActiveAPProp(prop, val) {
+            const ap = state.accessPoints.find(a => a.id === state.activeAPId);
+            if (!ap) return;
+            ap[prop] = val;
+            updateAPEditorUI();
+            updateAPListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateAPEditorUI() {
+            const ap = state.accessPoints.find(a => a.id === state.activeAPId);
+            const card = document.getElementById('ap-editor-card');
+            if (!ap) return;
+
+            document.getElementById('ap-selected-name').textContent = ap.name;
+            document.getElementById('ap-name-input').value = ap.name;
+            document.getElementById('ap-freq-select').value = ap.freq.toFixed(1);
+
+            // Rellenar selector de canales según banda
+            const chSelect = document.getElementById('ap-channel-select');
+            chSelect.innerHTML = '';
+            const bandKey = ap.freq.toFixed(1);
+            const list = WIFI_CHANNELS[bandKey] || WIFI_CHANNELS['5.0'];
+            
+            let matched = false;
+            list.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.ch;
+                opt.textContent = `${c.rec ? '★ ' : ''}Canal ${c.ch} (${c.freq} MHz)`;
+                if (c.ch === ap.channel) {
+                    opt.selected = true;
+                    matched = true;
+                }
+                chSelect.appendChild(opt);
+            });
+            if (!matched && list.length > 0) {
+                ap.channel = list[0].ch;
+                chSelect.value = list[0].ch;
+            }
+
+            const currentFreq = getChannelFreqMHz(ap.freq, ap.channel);
+            document.getElementById('ap-channel-freq-badge').textContent = `${currentFreq} MHz`;
+            document.getElementById('ap-chwidth-select').value = ap.channelWidth || 40;
+
+            document.getElementById('ap-antenna-type').value = ap.antennaType;
+            document.getElementById('antenna-type-badge').textContent = ap.antennaType === 'directional' ? 'Sectorial' : 'Omni';
+            document.getElementById('ap-beamwidth-select').value = ap.beamwidth || 60;
+            document.getElementById('ap-azimuth-slider').value = ap.azimuth || 0;
+            document.getElementById('ap-azimuth-val').textContent = `${ap.azimuth || 0}°`;
+            document.getElementById('ap-gain-slider').value = ap.antennaGain || 3.0;
+            document.getElementById('ap-gain-val').textContent = `${(ap.antennaGain || 3.0).toFixed(1)} dBi`;
+            document.getElementById('ap-f2b-slider').value = ap.frontToBack || 25;
+            document.getElementById('ap-f2b-val').textContent = `${ap.frontToBack || 25} dB`;
+            document.getElementById('ap-tx-val').textContent = `${ap.txPower} dBm`;
+            document.getElementById('ap-tx-slider').value = ap.txPower;
+            document.getElementById('ap-height-val').textContent = `${ap.height.toFixed(1)} m`;
+            document.getElementById('ap-height-slider').value = ap.height;
+
+            const dirBox = document.getElementById('directional-controls-box');
+            if (ap.antennaType === 'directional') dirBox.classList.remove('opacity-40', 'pointer-events-none');
+            else dirBox.classList.add('opacity-40', 'pointer-events-none');
+
+            const colorPicker = document.getElementById('ap-color-picker');
+            colorPicker.innerHTML = '';
+            AP_COLORS.forEach(c => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = `w-4 h-4 rounded-full transition-transform ${c === ap.color ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}`;
+                dot.style.backgroundColor = c;
+                dot.onclick = () => updateActiveAPProp('color', c);
+                colorPicker.appendChild(dot);
+            });
+        }
+
+        function updateAPListUI() {
+            const container = document.getElementById('ap-list-container');
+            document.getElementById('tab-cnt-aps').textContent = state.accessPoints.length;
+            container.innerHTML = '';
+
+            state.accessPoints.forEach(ap => {
+                const isSel = ap.id === state.activeAPId;
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-lg border flex items-center justify-between cursor-pointer transition ${
+                    isSel ? 'bg-cyan-950/80 border-cyan-500 text-cyan-200' : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:bg-slate-800/40'
+                }`;
+                div.onclick = () => { selectAP(ap.id); render2D(); };
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full" style="background-color: ${ap.color}"></span>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xs">${ap.name}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">${ap.freq}GHz • CH ${ap.channel} (${ap.channelWidth||40}MHz) • ${ap.txPower}dBm</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-cyan-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
+                        Z: ${ap.height.toFixed(1)}m
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectClient(id) {
+            state.activeClientId = id;
+            updateClientEditorUI();
+            updateClientListUI();
+        }
+
+        function addNewClient() {
+            const nextId = state.clients.length > 0 ? Math.max(...state.clients.map(c => c.id)) + 1 : 1;
+            state.clients.push({
+                id: nextId,
+                name: `Dispositivo ${nextId}`,
+                type: nextId % 2 === 0 ? 'laptop' : 'phone',
+                standard: 'wifi6',
+                x: 180 + (nextId * 45) % 360,
+                y: 220 + (nextId * 40) % 260,
+                height: 1.1,
+                forcedAP: 'auto',
+                associatedAPId: null,
+                antennaGain: 1.5,
+                noiseFloor: -95
+            });
+            selectClient(nextId);
+            switchTab('clients');
+            setTool('select');
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function deleteSelectedClient() {
+            if (state.clients.length <= 1) return;
+            state.clients = state.clients.filter(c => c.id !== state.activeClientId);
+            state.activeClientId = state.clients[0].id;
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateActiveClientProp(prop, val) {
+            const cl = state.clients.find(c => c.id === state.activeClientId);
+            if (!cl) return;
+            cl[prop] = val;
+            if (prop === 'type') {
+                if (val === 'phone') cl.antennaGain = 0.5;
+                else if (val === 'laptop') cl.antennaGain = 2.5;
+                else if (val === 'tablet') cl.antennaGain = 1.5;
+                else cl.antennaGain = 0.0;
+            }
+            updateClientEditorUI();
+            updateClientListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateClientEditorUI() {
+            const cl = state.clients.find(c => c.id === state.activeClientId);
+            if (!cl) return;
+
+            document.getElementById('client-selected-name').textContent = cl.name;
+            document.getElementById('cli-name-input').value = cl.name;
+            document.getElementById('cli-type-select').value = cl.type;
+            document.getElementById('cli-std-select').value = cl.standard;
+            document.getElementById('cli-height-val').textContent = `${(cl.height || 1.1).toFixed(1)} m`;
+            document.getElementById('cli-height-slider').value = cl.height || 1.1;
+
+            const apSelect = document.getElementById('cli-ap-association-select');
+            apSelect.innerHTML = '<option value="auto">Auto (Mejor RSSI/SINR)</option>';
+            state.accessPoints.forEach(ap => {
+                const opt = document.createElement('option');
+                opt.value = ap.id;
+                opt.textContent = `${ap.name} (${ap.freq}GHz • CH ${ap.channel})`;
+                apSelect.appendChild(opt);
+            });
+            apSelect.value = cl.forcedAP || 'auto';
+        }
+
+        function updateClientListUI() {
+            const container = document.getElementById('clients-list-container');
+            document.getElementById('tab-cnt-clients').textContent = state.clients.length;
+            container.innerHTML = '';
+
+            state.clients.forEach(cl => {
+                const isSel = cl.id === state.activeClientId;
+                const ap = state.accessPoints.find(a => a.id === cl.associatedAPId);
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-lg border flex items-center justify-between cursor-pointer transition ${
+                    isSel ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200' : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:bg-slate-800/40'
+                }`;
+                div.onclick = () => { selectClient(cl.id); render2D(); };
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xs">${cl.name}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">${cl.standard.toUpperCase()} • Enlace: ${ap ? ap.name : 'Ninguno'}</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-emerald-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
+                        Z: ${(cl.height || 1.1).toFixed(1)}m
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectNoiseSource(id) {
+            state.activeNoiseId = id;
+            updateNoiseEditorUI();
+            updateNoiseListUI();
+        }
+
+        function addNewNoiseSource() {
+            const nextId = state.noiseSources.length > 0 ? Math.max(...state.noiseSources.map(n => n.id)) + 1 : 1;
+            state.noiseSources.push({
+                id: nextId,
+                name: `Emisor Ruido ${nextId}`,
+                type: 'microwave',
+                x: 280 + (nextId * 45) % 320,
+                y: 240 + (nextId * 35) % 240,
+                height: 1.0,
+                power: 22,
+                dutyCycle: 60,
+                targetBand: '2.4',
+                active: true,
+                icon: 'zap',
+                color: '#f43f5e'
+            });
+            selectNoiseSource(nextId);
+            switchTab('noise');
+            setTool('select');
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function deleteSelectedNoiseSource() {
+            state.noiseSources = state.noiseSources.filter(n => n.id !== state.activeNoiseId);
+            state.activeNoiseId = state.noiseSources.length > 0 ? state.noiseSources[0].id : null;
+            updateUIComponents();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function toggleSelectedNoiseActive() {
+            const ns = state.noiseSources.find(n => n.id === state.activeNoiseId);
+            if (!ns) return;
+            ns.active = !ns.active;
+            updateNoiseEditorUI();
+            updateNoiseListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateActiveNoiseProp(prop, val) {
+            const ns = state.noiseSources.find(n => n.id === state.activeNoiseId);
+            if (!ns) return;
+            ns[prop] = val;
+            updateNoiseEditorUI();
+            updateNoiseListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function onNoisePresetChange(preset) {
+            const ns = state.noiseSources.find(n => n.id === state.activeNoiseId);
+            if (!ns) return;
+            ns.type = preset;
+            if (preset === 'microwave') { ns.name = 'Horno Microondas'; ns.power = 24; ns.dutyCycle = 60; ns.targetBand = '2.4'; ns.color = '#f43f5e'; }
+            else if (preset === 'led') { ns.name = 'Luminaria LED Balastras'; ns.power = 12; ns.dutyCycle = 100; ns.targetBand = 'all'; ns.color = '#eab308'; }
+            else if (preset === 'coffee') { ns.name = 'Cafetera Industrial'; ns.power = 15; ns.dutyCycle = 40; ns.targetBand = '2.4'; ns.color = '#d97706'; }
+            else if (preset === 'speaker') { ns.name = 'Altavoz Bluetooth'; ns.power = 16; ns.dutyCycle = 90; ns.targetBand = '2.4'; ns.color = '#8b5cf6'; }
+            else if (preset === 'hvac') { ns.name = 'Clima HVAC Compresor'; ns.power = 20; ns.dutyCycle = 80; ns.targetBand = 'all'; ns.color = '#f97316'; }
+            else if (preset === 'radar') { ns.name = 'Sensor Doppler 5.8GHz'; ns.power = 22; ns.dutyCycle = 70; ns.targetBand = '5.0'; ns.color = '#ec4899'; }
+
+            updateNoiseEditorUI();
+            updateNoiseListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function updateNoiseEditorUI() {
+            const ns = state.noiseSources.find(n => n.id === state.activeNoiseId);
+            if (!ns) return;
+
+            document.getElementById('noise-selected-name').textContent = ns.name;
+            document.getElementById('noise-name-input').value = ns.name;
+            document.getElementById('noise-type-preset').value = ns.type || 'custom';
+            document.getElementById('noise-band-select').value = ns.targetBand;
+            document.getElementById('noise-power-val').textContent = `${ns.power} dBm`;
+            document.getElementById('noise-power-slider').value = ns.power;
+            document.getElementById('noise-duty-val').textContent = `${ns.dutyCycle}%`;
+            document.getElementById('noise-duty-slider').value = ns.dutyCycle;
+
+            const toggleBtn = document.getElementById('noise-toggle-power-btn');
+            toggleBtn.textContent = ns.active ? 'ON' : 'OFF';
+            toggleBtn.className = ns.active ? 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 hover:bg-rose-500 text-white transition' : 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400';
+        }
+
+        function updateNoiseListUI() {
+            const container = document.getElementById('noise-list-container');
+            document.getElementById('tab-cnt-noise').textContent = state.noiseSources.length;
+            container.innerHTML = '';
+
+            state.noiseSources.forEach(ns => {
+                const isSel = ns.id === state.activeNoiseId;
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-lg border flex items-center justify-between cursor-pointer transition ${
+                    isSel ? 'bg-rose-950/80 border-rose-500 text-rose-200' : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:bg-slate-800/40'
+                }`;
+                div.onclick = () => { selectNoiseSource(ns.id); render2D(); };
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full ${ns.active ? 'bg-rose-500' : 'bg-slate-600'}"></span>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xs">${ns.name}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">${ns.targetBand}GHz • ${ns.power}dBm</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold ${ns.active ? 'text-rose-400' : 'text-slate-500'}">
+                        ${ns.active ? 'ACTIVO' : 'OFF'}
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function onPresetChange(preset) {
+            state.currentPreset = preset;
+            const badge = document.getElementById('preset-badge');
+            if (preset === 'drywall') { state.presetAttenuation = 3.0; badge.textContent = 'Tablaroca (3 dB)'; }
+            else if (preset === 'brick') { state.presetAttenuation = 6.0; badge.textContent = 'Ladrillo (6 dB)'; }
+            else if (preset === 'concrete') { state.presetAttenuation = 15.0; badge.textContent = 'Concreto (15 dB)'; }
+            else if (preset === 'metal') { state.presetAttenuation = 28.0; badge.textContent = 'Metal (28 dB)'; }
+            else if (preset === 'glass') { state.presetAttenuation = 2.5; badge.textContent = 'Vidrio (2.5 dB)'; }
+
+            if (state.activeWallIndex !== -1) {
+                state.walls[state.activeWallIndex].material = preset;
+                state.walls[state.activeWallIndex].attenuation = state.presetAttenuation;
+                updateWallEditorUI();
+                render2D();
+                if (state.view === '3d') update3DScene();
+            }
+        }
+
+        function setActiveWall(index) {
+            state.activeWallIndex = index;
+            updateWallEditorUI();
+            updateWallListUI();
+        }
+
+        function updateWallEditorUI() {
+            const indexLabel = document.getElementById('active-wall-index');
+            const slider = document.getElementById('wall-attenuation-slider');
+            const valLabel = document.getElementById('wall-attenuation-val');
+            const lengthLabel = document.getElementById('active-wall-length');
+            const heightInput = document.getElementById('active-wall-height');
+            const deleteBtn = document.getElementById('btn-delete-wall');
+
+            if (state.activeWallIndex >= 0 && state.activeWallIndex < state.walls.length) {
+                const wall = state.walls[state.activeWallIndex];
+                indexLabel.textContent = `ID #${state.activeWallIndex + 1}`;
+                lengthLabel.textContent = `${(Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) / state.pixelsPerMeter).toFixed(2)} m`;
+                heightInput.value = (wall.height || 2.8).toFixed(1);
+                slider.value = wall.attenuation;
+                valLabel.textContent = `${Number(wall.attenuation).toFixed(1)} dB`;
+                deleteBtn.disabled = false;
+            } else {
+                indexLabel.textContent = 'Ninguno';
+                lengthLabel.textContent = '-- m';
+                heightInput.value = state.defaultWallHeight;
+                valLabel.textContent = `${Number(state.presetAttenuation).toFixed(1)} dB`;
+                slider.value = state.presetAttenuation;
+                deleteBtn.disabled = true;
+            }
+        }
+
+        function updateActiveWallAttenuation(val) {
+            const num = parseFloat(val);
+            document.getElementById('wall-attenuation-val').textContent = `${num.toFixed(1)} dB`;
+            if (state.activeWallIndex >= 0 && state.activeWallIndex < state.walls.length) {
+                state.walls[state.activeWallIndex].attenuation = num;
+                render2D();
+                updateWallListUI();
+            }
+        }
+
+        function updateActiveWallHeight(val) {
+            const h = parseFloat(val);
+            if (h > 0 && state.activeWallIndex >= 0 && state.activeWallIndex < state.walls.length) {
+                state.walls[state.activeWallIndex].height = h;
+                render2D();
+                if (state.view === '3d') update3DScene();
+                updateWallListUI();
+            }
+        }
+
+        function deleteActiveWall() {
+            if (state.activeWallIndex >= 0 && state.activeWallIndex < state.walls.length) {
+                state.walls.splice(state.activeWallIndex, 1);
+                state.activeWallIndex = -1;
+                updateWallEditorUI();
+                updateWallListUI();
+                render2D();
+                if (state.view === '3d') update3DScene();
+            }
+        }
+
+        function updateWallListUI() {
+            const container = document.getElementById('walls-list-container');
+            document.getElementById('tab-cnt-walls').textContent = state.walls.length;
+            document.getElementById('walls-counter-badge').textContent = `${state.walls.length}`;
+            container.innerHTML = '';
+
+            state.walls.forEach((wall, idx) => {
+                const isSelected = idx === state.activeWallIndex;
+                const lenM = (Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) / state.pixelsPerMeter).toFixed(1);
+                const item = document.createElement('div');
+                item.className = `p-1.5 rounded flex items-center justify-between cursor-pointer transition border ${
+                    isSelected ? 'bg-cyan-950/70 border-cyan-500 text-cyan-200' : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:bg-slate-800/40'
+                }`;
+                item.onclick = () => { setActiveWall(idx); render2D(); };
+                item.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-cyan-400' : 'bg-slate-600'}"></span>
+                        <span class="font-medium">Muro ${idx + 1}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">(${lenM}m x ${(wall.height||2.8)}m)</span>
+                    </div>
+                    <span class="font-mono text-[11px] font-bold ${wall.attenuation > 15 ? 'text-red-400' : 'text-amber-400'}">
+                        ${wall.attenuation.toFixed(1)} dB
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function setTool(tool) {
+            state.tool = tool;
+            const selectBtn = document.getElementById('tool-select');
+            const drawBtn = document.getElementById('tool-draw');
+            const calBtn = document.getElementById('btn-tool-calibrate');
+
+            [selectBtn, drawBtn].forEach(b => {
+                b.className = 'py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800';
+            });
+            calBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-600/40 text-amber-400 hover:bg-amber-900/50 text-xs font-medium transition';
+
+            if (tool === 'select') {
+                selectBtn.className = 'py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-slate-800 text-cyan-300 border border-cyan-500/40';
+                document.getElementById('mode-text').textContent = 'Modo: Selección & Movimiento';
+                document.getElementById('mode-pill').className = 'w-2.5 h-2.5 rounded-full bg-cyan-400';
+            } else if (tool === 'draw') {
+                drawBtn.className = 'py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 bg-slate-800 text-cyan-300 border border-cyan-500/40';
+                document.getElementById('mode-text').textContent = 'Modo Dibujo: Clic y arrastra para trazar muros';
+                document.getElementById('mode-pill').className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+            } else if (tool === 'calibrate') {
+                calBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20';
+                document.getElementById('mode-text').textContent = 'Calibración: Traza un segmento de distancia conocida';
+                document.getElementById('mode-pill').className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping';
+            }
+        }
+
+        function applyCalibration() {
+            const realMeters = parseFloat(document.getElementById('modal-distance-input').value);
+            if (realMeters > 0 && state.calibratingPixels > 0) {
+                state.pixelsPerMeter = state.calibratingPixels / realMeters;
+                document.getElementById('input-ppm').value = state.pixelsPerMeter.toFixed(1);
+                updateScaleBar();
+                document.getElementById('calibration-modal').classList.add('hidden');
+                setTool('select');
+                render2D();
+                if (state.view === '3d') update3DScene();
+            }
+        }
+
+        function cancelCalibration() {
+            document.getElementById('calibration-modal').classList.add('hidden');
+            setTool('select');
+            render2D();
+        }
+
+        function setPPM(val) {
+            const ppm = parseFloat(val);
+            if (ppm >= 5) {
+                state.pixelsPerMeter = ppm;
+                updateScaleBar();
+                render2D();
+                if (state.view === '3d') update3DScene();
+            }
+        }
+
+        function clearCurrentPlan() {
+            state.walls = [];
+            state.activeWallIndex = -1;
+            updateWallEditorUI();
+            updateWallListUI();
+            render2D();
+            if (state.view === '3d') update3DScene();
+        }
+
+        function resizeCanvases() {
+            const container = document.getElementById('container-2d');
+            const w = container.clientWidth || 800;
+            const h = container.clientHeight || 600;
+
+            canvas.width = w;
+            canvas.height = h;
+            offCanvas.width = w;
+            offCanvas.height = h;
+
+            const wMeters = (w / state.pixelsPerMeter).toFixed(1);
+            const hMeters = (h / state.pixelsPerMeter).toFixed(1);
+            document.getElementById('canvas-dim-label').textContent = `${wMeters} x ${hMeters} m (${w}x${h}px)`;
+            updateScaleBar();
+        }
+
+        function updateScaleBar() {
+            const ppm = state.pixelsPerMeter;
+            let targetM = 5;
+            if (ppm * 5 > 200) targetM = 2;
+            if (ppm * 5 < 60) targetM = 10;
+
+            document.getElementById('visual-scale-bar').style.width = `${Math.round(ppm * targetM)}px`;
+            document.getElementById('visual-scale-text').textContent = `${targetM.toFixed(1)} Metros`;
+            document.getElementById('scale-ratio-text').textContent = `${ppm.toFixed(1)} px = 1.0 m`;
+            document.getElementById('indicator-topology').textContent = `${state.accessPoints.length} APs / ${state.clients.length} STAs / ${state.noiseSources.length} Ruido`;
+        }
+
+        function updateTelemetryPanel() {
+            const client = state.clients.find(c => c.id === state.activeClientId);
+            if (!client) return;
+
+            const ap = state.accessPoints.find(a => a.id === client.associatedAPId);
+            const tele = getClientLinkTelemetry(client, ap);
+
+            if (tele && ap) {
+                document.getElementById('telemetry-dist').textContent = `${tele.dist3D.toFixed(2)} m (2D: ${tele.dist2D.toFixed(2)}m)`;
+                document.getElementById('telemetry-walls').textContent = `${tele.wallsCount} muro${tele.wallsCount === 1 ? '' : 's'} (-${tele.wallLoss.toFixed(1)} dB)`;
+                document.getElementById('telemetry-rssi').textContent = `${tele.rssi.toFixed(1)} dBm`;
+                document.getElementById('telemetry-noise-floor').textContent = `${tele.noiseFloor.toFixed(1)} dBm`;
+                
+                const sinrElem = document.getElementById('telemetry-sinr');
+                sinrElem.textContent = `${tele.sinr} dB`;
+                if (tele.sinr >= 22) sinrElem.className = 'text-cyan-400 font-bold';
+                else if (tele.sinr >= 12) sinrElem.className = 'text-emerald-400 font-bold';
+                else sinrElem.className = 'text-rose-400 font-bold';
+
+                document.getElementById('telemetry-speed').textContent = tele.isConnected ? `${tele.throughput.toLocaleString()} Mbps` : 'Degradado / Caído';
+            } else {
+                document.getElementById('telemetry-dist').textContent = '-- m';
+                document.getElementById('telemetry-walls').textContent = '0 (-0 dB)';
+                document.getElementById('telemetry-rssi').textContent = 'Fuera de Cobertura';
+                document.getElementById('telemetry-noise-floor').textContent = '-- dBm';
+                document.getElementById('telemetry-sinr').textContent = '-- dB';
+                document.getElementById('telemetry-speed').textContent = '0 Mbps';
+            }
+        }
+
+        function updateUIComponents() {
+            updateAPEditorUI();
+            updateAPListUI();
+            updateClientEditorUI();
+            updateClientListUI();
+            updateNoiseEditorUI();
+            updateNoiseListUI();
+            updateWallEditorUI();
+            updateWallListUI();
+            updateTelemetryPanel();
+            updateScaleBar();
+            updateLegendUI();
+            ensureAuthorIntegrity();
+            if (isSpectrumModalOpen()) renderSpectrumAnalyzer();
+        }
+
+        function isSpectrumModalOpen() {
+            const modal = document.getElementById('spectrum-modal');
+            return modal && !modal.classList.contains('hidden');
+        }
+
+        function openSpectrumModal() {
+            const modal = document.getElementById('spectrum-modal');
+            if (!modal) return;
+            const client = state.clients.find(c => c.id === state.activeClientId);
+            if (client) {
+                document.getElementById('spectrum-device-badge').textContent = `STA: ${client.name} (${client.standard.toUpperCase()})`;
+                const associatedAP = state.accessPoints.find(a => a.id === client.associatedAPId);
+                if (associatedAP) state.spectrumBand = associatedAP.freq.toFixed(1);
+            }
+            modal.classList.remove('hidden');
+            setSpectrumBand(state.spectrumBand);
+            requestAnimationFrame(() => {
+                renderSpectrumAnalyzer();
+                setTimeout(() => renderSpectrumAnalyzer(), 80);
+            });
+        }
+
+        function closeSpectrumModal() {
+            document.getElementById('spectrum-modal').classList.add('hidden');
+        }
+
+        function setSpectrumBand(band) {
+            state.spectrumBand = band;
+            ['24', '50', '60'].forEach(b => {
+                const btn = document.getElementById(`spec-band-${b}`);
+                const isCurrent = (b === '24' && band === '2.4') || (b === '50' && band === '5.0') || (b === '60' && band === '6.0');
+                if (btn) btn.className = isCurrent ? 'px-2.5 py-1 rounded text-xs font-bold transition bg-emerald-600 text-white shadow' : 'px-2.5 py-1 rounded text-xs font-bold transition text-slate-400 hover:text-slate-200';
+            });
+            const bandLabel = document.getElementById('spectrum-current-band-label');
+            if (bandLabel) {
+                if (band === '2.4') bandLabel.textContent = 'Banda 2.4 GHz ISM (Canales 1 - 13)';
+                else if (band === '5.0') bandLabel.textContent = 'Banda 5.0 GHz UNII 1 - 3 (Canales 36 - 165)';
+                else bandLabel.textContent = 'Banda 6.0 GHz Wi-Fi 6E/7 UNII 5 - 8 (Canales 1 - 225)';
+            }
+            renderSpectrumAnalyzer();
+        }
+
+        function renderSpectrumAnalyzer() {
+            const specCanvas = document.getElementById('spectrumCanvas');
+            const wrapper = document.getElementById('spectrum-canvas-wrapper');
+            if (!specCanvas || !wrapper) return;
+            const client = state.clients.find(c => c.id === state.activeClientId);
+            if (!client) return;
+
+            const w = wrapper.clientWidth || 800;
+            const h = wrapper.clientHeight || 320;
+            const dpr = window.devicePixelRatio || 1;
+            specCanvas.width = Math.round(w * dpr);
+            specCanvas.height = Math.round(h * dpr);
+
+            const sctx = specCanvas.getContext('2d');
+            sctx.resetTransform ? sctx.resetTransform() : sctx.setTransform(1, 0, 0, 1, 0, 0);
+            sctx.scale(dpr, dpr);
+
+            const paddingLeft = 55, paddingRight = 25, paddingTop = 25, paddingBottom = 45;
+            const graphW = Math.max(100, w - paddingLeft - paddingRight);
+            const graphH = Math.max(50, h - paddingTop - paddingBottom);
+
+            const bandKey = parseFloat(state.spectrumBand).toFixed(1);
+            const channels = WIFI_CHANNELS[bandKey] || WIFI_CHANNELS['2.4'];
+            const startFreq = channels[0].freq - 20;
+            const endFreq = channels[channels.length - 1].freq + 20;
+
+            function freqToX(freq) { return paddingLeft + ((freq - startFreq) / (endFreq - startFreq)) * graphW; }
+            function dbmToY(dbm) { return paddingTop + graphH - ((Math.max(-105, Math.min(-25, dbm)) - (-105)) / 80) * graphH; }
+
+            sctx.fillStyle = '#020617';
+            sctx.fillRect(0, 0, w, h);
+
+            sctx.font = '10px monospace';
+            sctx.textAlign = 'right';
+            sctx.textBaseline = 'middle';
+            [-30, -45, -60, -70, -80, -90, -100].forEach(dbm => {
+                const y = dbmToY(dbm);
+                sctx.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+                sctx.beginPath();
+                sctx.moveTo(paddingLeft, y);
+                sctx.lineTo(w - paddingRight, y);
+                sctx.stroke();
+                sctx.fillStyle = '#64748b';
+                sctx.fillText(`${dbm}`, paddingLeft - 8, y);
+            });
+
+            channels.forEach((chObj, idx) => {
+                const x = freqToX(chObj.freq);
+                const show = state.spectrumBand === '2.4' ? true : (idx % 2 === 0);
+                sctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
+                sctx.beginPath();
+                sctx.moveTo(x, paddingTop);
+                sctx.lineTo(x, paddingTop + graphH);
+                sctx.stroke();
+
+                if (show) {
+                    sctx.fillStyle = '#94a3b8';
+                    sctx.font = 'bold 9px monospace';
+                    sctx.textAlign = 'center';
+                    sctx.fillText(`CH ${chObj.ch}`, x, paddingTop + graphH + 6);
+                    sctx.fillStyle = '#475569';
+                    sctx.font = '8px monospace';
+                    sctx.fillText(`${chObj.freq}`, x, paddingTop + graphH + 18);
+                }
+            });
+
+            const currentBandFloat = parseFloat(state.spectrumBand);
+            const totalNoiseAtClient = calculateTotalNoiseFloorAt(client.x, client.y, client.height || 1.1, currentBandFloat);
+            const noiseFloorY = dbmToY(totalNoiseAtClient);
+
+            sctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+            sctx.fillRect(paddingLeft, noiseFloorY, graphW, paddingTop + graphH - noiseFloorY);
+            sctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+            sctx.lineWidth = 1.5;
+            sctx.setLineDash([4, 3]);
+            sctx.beginPath();
+            sctx.moveTo(paddingLeft, noiseFloorY);
+            sctx.lineTo(w - paddingRight, noiseFloorY);
+            sctx.stroke();
+            sctx.setLineDash([]);
+
+            const detectedSignals = [];
+
+            // Fuentes de ruido
+            state.noiseSources.forEach(ns => {
+                if (!ns.active) return;
+                const targetBandNum = parseFloat(ns.targetBand);
+                const isMatch = ns.targetBand === 'all' || Math.abs(targetBandNum - currentBandFloat) < 0.3;
+                if (isMatch) {
+                    const noiseRx = calculateNoisePowerFromSource(ns, client.x, client.y, client.height || 1.1, currentBandFloat);
+                    if (noiseRx > -105) {
+                        const centerFreq = ns.type === 'microwave' ? 2450 : (startFreq + endFreq) / 2;
+                        detectedSignals.push({ type: 'noise', name: ns.name, power: noiseRx, freq: centerFreq });
+
+                        const xCenter = freqToX(centerFreq);
+                        const xLeft = freqToX(centerFreq - 20);
+                        const xRight = freqToX(centerFreq + 20);
+                        const peakY = dbmToY(noiseRx);
+
+                        sctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                        sctx.strokeStyle = '#ef4444';
+                        sctx.lineWidth = 1.8;
+                        sctx.beginPath();
+                        sctx.moveTo(xLeft, paddingTop + graphH);
+                        sctx.quadraticCurveTo(xCenter, peakY - 4, xRight, paddingTop + graphH);
+                        sctx.fill();
+                        sctx.stroke();
+                    }
+                }
+            });
+
+            // APs
+            let bestSignalDbm = -140;
+            state.accessPoints.forEach(ap => {
+                if (Math.abs(ap.freq - currentBandFloat) > 0.3) return;
+                const rssi = calculateSignalFromAP(ap, client.x, client.y, client.height || 1.1) + client.antennaGain;
+                if (rssi < -100) return;
+                if (rssi > bestSignalDbm) bestSignalDbm = rssi;
+
+                const centerFreq = getChannelFreqMHz(ap.freq, ap.channel);
+                const chWidth = ap.channelWidth || 40;
+
+                detectedSignals.push({
+                    type: 'ap',
+                    name: ap.name,
+                    ap: ap,
+                    power: rssi,
+                    channel: ap.channel,
+                    freq: centerFreq,
+                    span: chWidth
+                });
+
+                const xCenter = freqToX(centerFreq);
+                const halfW = chWidth / 2;
+                const xLeft = freqToX(centerFreq - halfW);
+                const xRight = freqToX(centerFreq + halfW);
+                const peakY = dbmToY(rssi);
+
+                const isAssoc = client.associatedAPId === ap.id;
+                sctx.fillStyle = `${ap.color}66`;
+                sctx.strokeStyle = isAssoc ? '#ffffff' : ap.color;
+                sctx.lineWidth = isAssoc ? 2.5 : 1.8;
+
+                sctx.beginPath();
+                sctx.moveTo(freqToX(centerFreq - halfW * 1.3), paddingTop + graphH);
+                sctx.lineTo(xLeft, peakY + 2);
+                sctx.lineTo(xCenter, peakY);
+                sctx.lineTo(xRight, peakY + 2);
+                sctx.lineTo(freqToX(centerFreq + halfW * 1.3), paddingTop + graphH);
+                sctx.fill();
+                sctx.stroke();
+
+                sctx.fillStyle = isAssoc ? '#38bdf8' : '#e2e8f0';
+                sctx.font = 'bold 10px monospace';
+                sctx.textAlign = 'center';
+                sctx.fillText(`${ap.name} (CH ${ap.channel})`, xCenter, peakY - 12);
+            });
+
+            sctx.strokeStyle = 'rgba(51, 65, 85, 0.7)';
+            sctx.lineWidth = 1;
+            sctx.strokeRect(paddingLeft, paddingTop, graphW, graphH);
+
+            const listContainer = document.getElementById('spectrum-signals-list');
+            document.getElementById('spectrum-detected-count').textContent = `${detectedSignals.length} detectados`;
+            document.getElementById('spectrum-summary-noise').textContent = `${totalNoiseAtClient.toFixed(1)} dBm`;
+            document.getElementById('spectrum-summary-rssi').textContent = bestSignalDbm > -140 ? `${bestSignalDbm.toFixed(1)} dBm` : 'Sin Señal';
+
+            listContainer.innerHTML = '';
+            detectedSignals.forEach(sig => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-slate-800';
+                if (sig.type === 'ap') {
+                    row.innerHTML = `
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${sig.ap.color}"></span>
+                            <span class="font-bold text-slate-200">${sig.name}</span>
+                            <span class="text-[10px] text-slate-400">(CH ${sig.channel} • ${sig.span}MHz)</span>
+                        </div>
+                        <span class="font-bold ${sig.power >= -65 ? 'text-emerald-400' : 'text-amber-400'}">${sig.power.toFixed(1)} dBm</span>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="font-bold text-rose-300">⚡ ${sig.name}</span>
+                        </div>
+                        <span class="font-bold text-rose-400">${sig.power.toFixed(1)} dBm</span>
+                    `;
+                }
+                listContainer.appendChild(row);
+            });
+        }
+
+        /* THREE.JS */
+        let scene3D, camera3D, renderer3D, controls3D;
+        let walls3DGroup, floorHeatmapMesh, aps3DGroup, clients3DGroup, noise3DGroup, rfBeams3DGroup;
+
+        function init3D() {
+            const container = document.getElementById('three-viewport');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x020617);
+
+            camera3D = new THREE.PerspectiveCamera(45, w / h, 1, 4000);
+            camera3D.position.set(450, 750, 950);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(w, h);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            controls3D.target.set(380, 0, 280);
+
+            scene3D.add(new THREE.AmbientLight(0xffffff, 0.75));
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+            dirLight.position.set(300, 700, 300);
+            scene3D.add(dirLight);
+
+            walls3DGroup = new THREE.Group();
+            aps3DGroup = new THREE.Group();
+            clients3DGroup = new THREE.Group();
+            noise3DGroup = new THREE.Group();
+            rfBeams3DGroup = new THREE.Group();
+
+            scene3D.add(walls3DGroup);
+            scene3D.add(aps3DGroup);
+            scene3D.add(clients3DGroup);
+            scene3D.add(noise3DGroup);
+            scene3D.add(rfBeams3DGroup);
+
+            function loop() {
+                requestAnimationFrame(loop);
+                if (state.view === '3d') {
+                    controls3D.update();
+                    renderer3D.render(scene3D, camera3D);
+                }
+            }
+            loop();
+        }
+
+        function clearGroup(group) {
+            while (group.children.length > 0) {
+                const child = group.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+                group.remove(child);
+            }
+        }
+
+        function update3DScene() {
+            if (!scene3D) return;
+            const scaleZ = state.pixelsPerMeter;
+
+            clearGroup(walls3DGroup);
+            state.walls.forEach(wall => {
+                const dx = wall.x2 - wall.x1;
+                const dz = wall.y2 - wall.y1;
+                const length = Math.hypot(dx, dz);
+                const visualH = (wall.height || 2.8) * scaleZ;
+
+                let matColor = 0x94a3b8;
+                if (wall.material === 'concrete') matColor = 0x64748b;
+                else if (wall.material === 'brick') matColor = 0xd97706;
+                else if (wall.material === 'drywall') matColor = 0x0284c7;
+                else if (wall.material === 'metal') matColor = 0xef4444;
+                else if (wall.material === 'glass') matColor = 0x06b6d4;
+
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(length, visualH, 0.22 * scaleZ),
+                    new THREE.MeshStandardMaterial({
+                        color: matColor,
+                        transparent: wall.material === 'glass',
+                        opacity: wall.material === 'glass' ? 0.45 : 0.85
+                    })
+                );
+                mesh.position.set((wall.x1 + wall.x2) / 2, visualH / 2, (wall.y1 + wall.y2) / 2);
+                mesh.rotation.y = -Math.atan2(dz, dx);
+                walls3DGroup.add(mesh);
+            });
+
+            if (floorHeatmapMesh) scene3D.remove(floorHeatmapMesh);
+            floorHeatmapMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(offCanvas.width, offCanvas.height),
+                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(offCanvas), side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+            );
+            floorHeatmapMesh.rotation.x = Math.PI / 2;
+            floorHeatmapMesh.position.set(offCanvas.width / 2, 0.1, offCanvas.height / 2);
+            scene3D.add(floorHeatmapMesh);
+
+            clearGroup(aps3DGroup);
+            state.accessPoints.forEach(ap => {
+                const apVisualH = ap.height * scaleZ;
+                const apMesh = new THREE.Mesh(
+                    new THREE.CylinderGeometry(14, 14, 4, 32),
+                    new THREE.MeshStandardMaterial({ color: parseInt(ap.color.replace('#', '0x')) })
+                );
+                apMesh.position.set(ap.x, apVisualH, ap.y);
+                aps3DGroup.add(apMesh);
+            });
+
+            clearGroup(clients3DGroup);
+            state.clients.forEach(cl => {
+                const clMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(16, 8, 12),
+                    new THREE.MeshStandardMaterial({ color: 0x10b981 })
+                );
+                clMesh.position.set(cl.x, (cl.height || 1.1) * scaleZ, cl.y);
+                clients3DGroup.add(clMesh);
+            });
+
+            clearGroup(noise3DGroup);
+            state.noiseSources.forEach(ns => {
+                const nsMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(18, 14, 14),
+                    new THREE.MeshStandardMaterial({ color: parseInt(ns.color.replace('#', '0x')) })
+                );
+                nsMesh.position.set(ns.x, (ns.height || 1.0) * scaleZ, ns.y);
+                noise3DGroup.add(nsMesh);
+            });
+
+            clearGroup(rfBeams3DGroup);
+            state.clients.forEach(cl => {
+                const ap = state.accessPoints.find(a => a.id === cl.associatedAPId);
+                if (!ap) return;
+                const p1 = new THREE.Vector3(ap.x, ap.height * scaleZ, ap.y);
+                const p2 = new THREE.Vector3(cl.x, (cl.height || 1.1) * scaleZ, cl.y);
+                const beamDist = p1.distanceTo(p2);
+
+                const cylMesh = new THREE.Mesh(
+                    new THREE.CylinderGeometry(1.5, 1.5, beamDist, 12),
+                    new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 })
+                );
+                cylMesh.position.copy(p1.clone().add(p2).multiplyScalar(0.5));
+                const orient = new THREE.Matrix4();
+                orient.lookAt(p1, p2, new THREE.Vector3(0, 1, 0));
+                orient.multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+                cylMesh.applyMatrix4(orient);
+                rfBeams3DGroup.add(cylMesh);
+            });
+
+            controls3D.target.set(offCanvas.width / 2, 0, offCanvas.height / 2);
+        }
+
+        function switchView(view) {
+            state.view = view;
+            const c2D = document.getElementById('container-2d');
+            const c3D = document.getElementById('container-3d');
+            const b2D = document.getElementById('btn-view-2d');
+            const b3D = document.getElementById('btn-view-3d');
+
+            if (view === '2d') {
+                c2D.classList.remove('hidden');
+                c3D.classList.add('hidden');
+                b2D.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-cyan-400 border border-cyan-500/40 shadow';
+                b3D.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200';
+                render2D();
+            } else {
+                c2D.classList.add('hidden');
+                c3D.classList.remove('hidden');
+                b3D.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-cyan-400 border border-cyan-500/40 shadow';
+                b2D.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200';
+                if (!renderer3D) init3D();
+                else {
+                    const cont = document.getElementById('three-viewport');
+                    camera3D.aspect = cont.clientWidth / cont.clientHeight;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(cont.clientWidth, cont.clientHeight);
+                }
+                update3DScene();
+            }
+        }
+
+        function openAuthorModal() {
+            ensureAuthorIntegrity();
+            document.getElementById('author-modal').classList.remove('hidden');
+        }
+
+        function closeAuthorModal() {
+            document.getElementById('author-modal').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            ensureAuthorIntegrity();
+            resizeCanvases();
+            updateUIComponents();
+            render2D();
+
+            window.addEventListener('resize', () => {
+                resizeCanvases();
+                if (renderer3D && state.view === '3d') {
+                    const cont = document.getElementById('three-viewport');
+                    camera3D.aspect = cont.clientWidth / cont.clientHeight;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(cont.clientWidth, cont.clientHeight);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
