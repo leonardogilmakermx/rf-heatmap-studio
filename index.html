@@ -2,7 +2,7 @@
      PROPIEDAD INTELECTUAL Y DERECHOS DE AUTOR REGISTRADOS
      RF HEATMAP STUDIO ENTERPRISE 2D/3D - SIMULADOR TELECOMUNICACIONES RF
      --------------------------------------------------------------------------
-     AUTOR ORIGINAL & ARQUITECTO DE SOFTWARE:
+     AUTOR ORIGINAL:
      Ing. G. Leonardo Dominguez Garcia
 
      TODOS LOS DERECHOS RESERVADOS (C) 2026.
@@ -189,7 +189,7 @@
                     <div id="ap-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-cyan-900/60 space-y-2.5 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                                <i data-lucide="radio" class="w-3.5 h-3.5"></i> AP Seleccionado: <span id="ap-selected-name" class="text-white">AP-1</span>
+                                <i data-lucide="radio" class="w-3.5 h-3.5"></i> AP Seleccionado: <span id="ap-selected-name" class="text-white">Ninguno</span>
                             </span>
                             <button onclick="deleteSelectedAP()" class="p-1 rounded text-red-400 hover:bg-red-950/60 transition" title="Eliminar este AP">
                                 <i data-lucide="trash" class="w-3.5 h-3.5"></i>
@@ -313,7 +313,7 @@
                     <div id="client-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-emerald-900/60 space-y-2.5 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Dispositivo: <span id="client-selected-name" class="text-white">Laptop 1</span>
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Dispositivo: <span id="client-selected-name" class="text-white">Ninguno</span>
                             </span>
                             <button onclick="deleteSelectedClient()" class="p-1 rounded text-red-400 hover:bg-red-950/60 transition" title="Eliminar este cliente">
                                 <i data-lucide="trash" class="w-3.5 h-3.5"></i>
@@ -411,7 +411,7 @@
                     <div id="noise-editor-card" class="p-3 rounded-lg bg-slate-950/90 border border-rose-900/60 space-y-2.5 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
-                                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Agente: <span id="noise-selected-name" class="text-white">Microondas</span>
+                                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Agente: <span id="noise-selected-name" class="text-white">Ninguno</span>
                             </span>
                             <div class="flex items-center gap-1">
                                 <button id="noise-toggle-power-btn" onclick="toggleSelectedNoiseActive()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 hover:bg-rose-500 text-white transition">ON</button>
@@ -708,7 +708,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-bold text-white tracking-wide">Analizador de Espectro RF en Tiempo Real</h3>
-                            <span id="spectrum-device-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/50 text-emerald-300 font-mono">STA: Laptop 1</span>
+                            <span id="spectrum-device-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/50 text-emerald-300 font-mono">STA: Ninguno</span>
                         </div>
                         <p class="text-[11px] text-slate-400">Densidad espectral PSD recibida, ocupación de canales e interferencias no-WiFi</p>
                     </div>
@@ -819,6 +819,7 @@
             return found ? found.freq : (parseFloat(band) * 1000);
         }
 
+        // ESTADO INICIAL LIMPIO (SIN ELEMENTOS PREDETERMINADOS)
         const state = {
             view: '2d',
             tool: 'select',
@@ -839,9 +840,9 @@
             floorplanImage: null,
             floorplanOpacity: 0.65,
 
-            activeAPId: 1,
-            activeClientId: 1,
-            activeNoiseId: 1,
+            activeAPId: null,
+            activeClientId: null,
+            activeNoiseId: null,
             activeWallIndex: -1,
 
             draggingObject: null,
@@ -852,98 +853,10 @@
             presetAttenuation: 6.0,
             defaultWallHeight: 2.8,
 
-            // PUNTOS DE ACCESO CON RADIOS CONCURRENTES MULTI-BANDA
-            accessPoints: [
-                {
-                    id: 1,
-                    name: 'AP-1 Hall Principal',
-                    x: 230,
-                    y: 190,
-                    height: 2.6,
-                    antennaType: 'omni',
-                    beamwidth: 60,
-                    azimuth: 0,
-                    antennaGain: 3.0,
-                    frontToBack: 25.0,
-                    color: '#06b6d4',
-                    radios: {
-                        '2.4': { enabled: true, channel: 1, channelWidth: 20, txPower: 20 },
-                        '5.0': { enabled: true, channel: 36, channelWidth: 80, txPower: 22 },
-                        '6.0': { enabled: true, channel: 33, channelWidth: 160, txPower: 22 }
-                    }
-                },
-                {
-                    id: 2,
-                    name: 'AP-2 Sectorial',
-                    x: 520,
-                    y: 360,
-                    height: 2.6,
-                    antennaType: 'directional',
-                    beamwidth: 60,
-                    azimuth: 225,
-                    antennaGain: 9.0,
-                    frontToBack: 26.0,
-                    color: '#8b5cf6',
-                    radios: {
-                        '2.4': { enabled: true, channel: 6, channelWidth: 20, txPower: 18 },
-                        '5.0': { enabled: true, channel: 149, channelWidth: 40, txPower: 20 },
-                        '6.0': { enabled: false, channel: 65, channelWidth: 80, txPower: 18 }
-                    }
-                }
-            ],
-
-            noiseSources: [
-                {
-                    id: 1,
-                    name: 'Horno Microondas',
-                    type: 'microwave',
-                    x: 320,
-                    y: 280,
-                    height: 1.0,
-                    power: 24,
-                    dutyCycle: 60,
-                    targetBand: '2.4',
-                    active: true,
-                    color: '#f43f5e'
-                },
-                {
-                    id: 2,
-                    name: 'Compresor Clima HVAC',
-                    type: 'hvac',
-                    x: 610,
-                    y: 470,
-                    height: 2.4,
-                    power: 20,
-                    dutyCycle: 80,
-                    targetBand: 'all',
-                    active: true,
-                    color: '#f97316'
-                }
-            ],
-
-            clients: [
-                {
-                    id: 1,
-                    name: 'Laptop Gerencia',
-                    type: 'laptop',
-                    standard: 'wifi7',
-                    x: 480,
-                    y: 180,
-                    height: 1.1,
-                    forcedAP: 'auto',
-                    associatedAPId: null,
-                    antennaGain: 2.5,
-                    noiseFloor: -95
-                }
-            ],
-
-            walls: [
-                { id: 1, x1: 90,  y1: 70,  x2: 670, y2: 70,  attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Norte' },
-                { id: 2, x1: 90,  y1: 70,  x2: 90,  y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Oeste' },
-                { id: 3, x1: 670, y1: 70,  x2: 670, y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Este' },
-                { id: 4, x1: 90,  y1: 520, x2: 670, y2: 520, attenuation: 15.0, height: 3.0, material: 'concrete', name: 'Muro Sur' },
-                { id: 5, x1: 370, y1: 70,  x2: 370, y2: 340, attenuation: 6.0,  height: 2.8, material: 'brick',    name: 'Muro Centro' }
-            ]
+            accessPoints: [],
+            noiseSources: [],
+            clients: [],
+            walls: []
         };
 
         const canvas = document.getElementById('heatmapCanvas');
@@ -1012,7 +925,6 @@
 
                     const proj = data.project;
 
-                    // Restaurar parámetros del entorno
                     state.pixelsPerMeter = proj.pixelsPerMeter || 25.0;
                     state.gridStep = proj.gridStep || 10;
                     state.heatmapMode = proj.heatmapMode || 'composite';
@@ -1020,19 +932,16 @@
                     state.presetAttenuation = proj.presetAttenuation || 6.0;
                     state.defaultWallHeight = proj.defaultWallHeight || 2.8;
 
-                    // Restaurar elementos
                     state.accessPoints = proj.accessPoints || [];
                     state.clients = proj.clients || [];
                     state.noiseSources = proj.noiseSources || [];
                     state.walls = proj.walls || [];
 
-                    // Restaurar selecciones
                     state.activeAPId = state.accessPoints.length > 0 ? state.accessPoints[0].id : null;
                     state.activeClientId = state.clients.length > 0 ? state.clients[0].id : null;
                     state.activeNoiseId = state.noiseSources.length > 0 ? state.noiseSources[0].id : null;
                     state.activeWallIndex = -1;
 
-                    // Restaurar Plano Arquitectónico si existe
                     if (proj.floorplan && proj.floorplan.hasImage && proj.floorplan.dataUrl) {
                         state.floorplanOpacity = proj.floorplan.opacity || 0.65;
                         const img = new Image();
@@ -1049,11 +958,9 @@
                         removeFloorplan();
                     }
 
-                    // Actualizar inputs UI
                     document.getElementById('input-ppm').value = state.pixelsPerMeter.toFixed(1);
                     document.getElementById('material-preset').value = state.currentPreset;
 
-                    // Refrescar vistas
                     resetZoom();
                     updateUIComponents();
                     render2D();
@@ -1382,22 +1289,24 @@
 
             offCtx.clearRect(0, 0, w, h);
 
-            for (let x = 0; x < w; x += step) {
-                for (let y = 0; y < h; y += step) {
-                    const cx = x + step / 2;
-                    const cy = y + step / 2;
+            if (state.accessPoints.length > 0 || state.heatmapMode === 'noise') {
+                for (let x = 0; x < w; x += step) {
+                    for (let y = 0; y < h; y += step) {
+                        const cx = x + step / 2;
+                        const cy = y + step / 2;
 
-                    if (state.heatmapMode === 'sinr') {
-                        const rssi = calculateCompositeSignalAt(cx, cy, 1.1);
-                        const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, 5.0);
-                        offCtx.fillStyle = sinrToColor(rssi - noise);
-                    } else if (state.heatmapMode === 'noise') {
-                        const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, 2.4);
-                        offCtx.fillStyle = noiseToColor(noise);
-                    } else {
-                        offCtx.fillStyle = rssiToColor(calculateCompositeSignalAt(cx, cy, 1.1));
+                        if (state.heatmapMode === 'sinr') {
+                            const rssi = calculateCompositeSignalAt(cx, cy, 1.1);
+                            const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, 5.0);
+                            offCtx.fillStyle = sinrToColor(rssi - noise);
+                        } else if (state.heatmapMode === 'noise') {
+                            const noise = calculateTotalNoiseFloorAt(cx, cy, 1.1, 2.4);
+                            offCtx.fillStyle = noiseToColor(noise);
+                        } else {
+                            offCtx.fillStyle = rssiToColor(calculateCompositeSignalAt(cx, cy, 1.1));
+                        }
+                        offCtx.fillRect(x, y, step, step);
                     }
-                    offCtx.fillRect(x, y, step, step);
                 }
             }
 
@@ -1845,7 +1754,16 @@
 
         function updateAPEditorUI() {
             const ap = state.accessPoints.find(a => a.id === state.activeAPId);
-            if (!ap) return;
+            if (!ap) {
+                document.getElementById('ap-selected-name').textContent = 'Ninguno';
+                document.getElementById('ap-name-input').value = '';
+                document.getElementById('ap-radio-enable-24').checked = false;
+                document.getElementById('ap-radio-enable-50').checked = false;
+                document.getElementById('ap-radio-enable-60').checked = false;
+                document.getElementById('ap-radios-config-container').innerHTML = '';
+                document.getElementById('ap-color-picker').innerHTML = '';
+                return;
+            }
 
             document.getElementById('ap-selected-name').textContent = ap.name;
             document.getElementById('ap-name-input').value = ap.name;
@@ -1986,9 +1904,9 @@
         }
 
         function deleteSelectedAP() {
-            if (state.accessPoints.length <= 1) return;
+            if (state.accessPoints.length === 0) return;
             state.accessPoints = state.accessPoints.filter(a => a.id !== state.activeAPId);
-            state.activeAPId = state.accessPoints[0].id;
+            state.activeAPId = state.accessPoints.length > 0 ? state.accessPoints[0].id : null;
             updateUIComponents();
             render2D();
             if (state.view === '3d') update3DScene();
@@ -2052,9 +1970,9 @@
         }
 
         function deleteSelectedClient() {
-            if (state.clients.length <= 1) return;
+            if (state.clients.length === 0) return;
             state.clients = state.clients.filter(c => c.id !== state.activeClientId);
-            state.activeClientId = state.clients[0].id;
+            state.activeClientId = state.clients.length > 0 ? state.clients[0].id : null;
             updateUIComponents();
             render2D();
             if (state.view === '3d') update3DScene();
@@ -2072,7 +1990,11 @@
 
         function updateClientEditorUI() {
             const cl = state.clients.find(c => c.id === state.activeClientId);
-            if (!cl) return;
+            if (!cl) {
+                document.getElementById('client-selected-name').textContent = 'Ninguno';
+                document.getElementById('cli-name-input').value = '';
+                return;
+            }
 
             document.getElementById('client-selected-name').textContent = cl.name;
             document.getElementById('cli-name-input').value = cl.name;
@@ -2150,6 +2072,7 @@
         }
 
         function deleteSelectedNoiseSource() {
+            if (state.noiseSources.length === 0) return;
             state.noiseSources = state.noiseSources.filter(n => n.id !== state.activeNoiseId);
             state.activeNoiseId = state.noiseSources.length > 0 ? state.noiseSources[0].id : null;
             updateUIComponents();
@@ -2192,7 +2115,11 @@
 
         function updateNoiseEditorUI() {
             const ns = state.noiseSources.find(n => n.id === state.activeNoiseId);
-            if (!ns) return;
+            if (!ns) {
+                document.getElementById('noise-selected-name').textContent = 'Ninguno';
+                document.getElementById('noise-name-input').value = '';
+                return;
+            }
             document.getElementById('noise-selected-name').textContent = ns.name;
             document.getElementById('noise-name-input').value = ns.name;
             document.getElementById('noise-type-preset').value = ns.type || 'custom';
@@ -2409,10 +2336,15 @@
         }
 
         function clearCurrentPlan() {
+            state.accessPoints = [];
+            state.clients = [];
+            state.noiseSources = [];
             state.walls = [];
+            state.activeAPId = null;
+            state.activeClientId = null;
+            state.activeNoiseId = null;
             state.activeWallIndex = -1;
-            updateWallEditorUI();
-            updateWallListUI();
+            updateUIComponents();
             render2D();
             if (state.view === '3d') update3DScene();
         }
@@ -2447,7 +2379,15 @@
 
         function updateTelemetryPanel() {
             const client = state.clients.find(c => c.id === state.activeClientId);
-            if (!client) return;
+            if (!client) {
+                document.getElementById('telemetry-dist').textContent = '-- m';
+                document.getElementById('telemetry-walls').textContent = '0 (-0 dB)';
+                document.getElementById('telemetry-rssi').textContent = '-- dBm';
+                document.getElementById('telemetry-noise-floor').textContent = '-- dBm';
+                document.getElementById('telemetry-sinr').textContent = '-- dB';
+                document.getElementById('telemetry-speed').textContent = '-- Mbps';
+                return;
+            }
 
             const ap = state.accessPoints.find(a => a.id === client.associatedAPId);
             const tele = getClientLinkTelemetry(client, ap);
@@ -3059,6 +2999,8 @@
             const client = state.clients.find(c => c.id === state.activeClientId);
             if (client) {
                 document.getElementById('spectrum-device-badge').textContent = `STA: ${client.name} (${client.standard.toUpperCase()})`;
+            } else {
+                document.getElementById('spectrum-device-badge').textContent = 'STA: Ninguno';
             }
             modal.classList.remove('hidden');
             setSpectrumBand(state.spectrumBand);
@@ -3086,8 +3028,7 @@
             const specCanvas = document.getElementById('spectrumCanvas');
             const wrapper = document.getElementById('spectrum-canvas-wrapper');
             if (!specCanvas || !wrapper) return;
-            const client = state.clients.find(c => c.id === state.activeClientId);
-            if (!client) return;
+            const client = state.clients.find(c => c.id === state.activeClientId) || { x: offCanvas.width / 2, y: offCanvas.height / 2, height: 1.1, antennaGain: 2.0, associatedAPId: null };
 
             const w = wrapper.clientWidth || 800;
             const h = wrapper.clientHeight || 320;
